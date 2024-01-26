@@ -45,7 +45,10 @@ class CASOParser:
         if current_token.type == "LET":
             self.parse_declaration()
         else:
-            raise CASOSyntaxError(f"Unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
+            if current_token.type == "NEWLINE":
+                self.current_position += 1
+            else:
+                raise CASOSyntaxError(f"Unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
 
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
@@ -89,14 +92,21 @@ class CASOParser:
 
         # Collect all the tokens until the end of the line
         while self.current_position < len(self.tokens) and self.tokens[self.current_position].type != 'NEWLINE':
-            expression_tokens.append(self.tokens[self.current_position])
+            if self.tokens[self.current_position].type in self.ARITHMETIC_OPERATORS:
+                expression_tokens.append(self.tokens[self.current_position])
+            elif self.tokens[self.current_position].type == 'ID':
+                expression_tokens.append(self.tokens[self.current_position])
+            elif self.tokens[self.current_position].type == 'NUMBER':
+                expression_tokens.append(self.tokens[self.current_position])
+            else:
+                raise CASOSyntaxError(f"Unexpected token {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             self.current_position += 1
 
         # Skip the 'NEWLINE' token
         if self.current_position < len(self.tokens) and self.tokens[self.current_position].type == 'NEWLINE':
             self.current_position += 1
 
-        # Convert to raw string
-        expression_string = ' '.join(token.value for token in expression_tokens)
+        # Convert to raw string (ensuring all values are strings)
+        expression_string = ' '.join(str(token.value) for token in expression_tokens)
         return expression_string
 

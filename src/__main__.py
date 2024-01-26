@@ -9,6 +9,10 @@ def main() -> None:
     """
     lexer = caso_lexer.MapleLexer(source_code)
     tokens = lexer.tokenize()
+    print(tokens)
+
+    print() # Separation
+
     parser = caso_parser.CASOParser(tokens)
     nodes = parser.parse()
     print(nodes)

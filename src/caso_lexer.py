@@ -67,6 +67,8 @@ class MapleLexer:
                 if type_ == "NEWLINE":
                     line_start = match.end()
                     line_num += 1
+                    # Add the NEWLINE token
+                    self.tokens.append(Token(type_, '\n', line_num, char_pos))
                 elif type_ != "SKIP" and type_ != "COMMENT":
                     value = match.group(type_)
                     if type_ == "NUMBER":
@@ -78,3 +80,4 @@ class MapleLexer:
                 raise CASOIllegalTokenError("Illegal character '%s'" % self.source_code[self.current_position], line_num, self.current_position)
 
         return self.tokens
+
