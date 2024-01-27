@@ -1,1 +1,18 @@
-let a: Int = 10
+// CASO test for general variable delcaration and assignment
+let x: Int = 10
+let y: Int = 20
+let z: Int = x + y
+
+// let z: Int = 1 ------ returns an error
+// let a Int = 1 ----- returns an error
+// let a: int = 1 ----- returns an error
+
+x := 2 
+z := x + y
+x := z + 1
+
+// a := 2 ----- returns an error
+// x := ----- returns an error
+// x := a ----- returns an error
+
+let a: List[List[Int]] = [1, 2, 3, 4]

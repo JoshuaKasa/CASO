@@ -11,7 +11,7 @@ class Token:
     def __repr__(self):
         return f"Token({repr(self.type)}, {repr(self.value)}, {repr(self.line_num)}, {repr(self.char_pos)})"
 
-class MapleLexer:
+class CASOLexer:
     TOKEN_SPECIFICATION = [
         ("NUMBER", r"\d+(\.\d*)?"), # Integer or decimal numbers
 
@@ -19,29 +19,36 @@ class MapleLexer:
         ("INT", r"\bInt\b"), # Int type
         ("FLOAT", r"\bFloat\b"), # Float type
         ("BOOL", r"\bBool\b"), # Bool type
+        ('LIST', r'\bList\b'), # List type
 
         # Keywords
         ('LET', r'\blet\b'), # Let keyword, used for variable declaration
 
         # Operators
-        ('TYPE_ASSIGN', r':' ), # Type assignment operator
         ('ASSIGN', r'='), # Assignment operator
+        ('REASSIGN', r':='), # Reassignment operator
+        ('TYPE_ASSIGN', r':' ), # Type assignment operator
 
-        # Arithmetic operators
+        # Characters
+        ('OPEN_PAREN', r'\('), # Open parenthesis' 
+        ('CLOSE_PAREN', r'\)'), # Close parenthesis
+        ('OPEN_BRACKET', r'\['), # Open bracket
+        ('CLOSE_BRACKET', r'\]'), # Close bracket
+        ('OPEN_BRACE', r'\{'), # Open brace
+        ('CLOSE_BRACE', r'\}'), # Close brace
+        ("COMMENT" , r"//.*"), # Comment
+        ("COMMA", r","), # Comma
+        ("SEMICOLON", r";"), # Semicolon
+        ('EXCLAMATION', r'!'), # Exclamation mark
+        ('QUESTION', r'\?'), # Question mark
+
+        # Arithmetic operators (putting them after the other operators to avoid conflicts)
         ('PLUS', r'\+'), # Addition operator
         ('MINUS', r'-'), # Subtraction operator
         ('MUL', r'\*'), # Multiplication operator
         ('DIV', r'/'), # Division operator
-        ('MOD', r'%'), # Modulo operator
-
-        # Characters
-        ("LEFT_PAREN", r"\("), # Left parenthesis
-        ("LEFT_SQR_BRACKET", r"\["), # Left square bracket
-        ("RIGHT_SQR_BRACKET", r"\]"), # Right square bracket
-        ("LEFT_CRLY_BRACKET", r"\{"), # Left curly bracket
-        ("RIGHT_CRLY_BRACKET", r"\}"), # Right curly bracket
-        ("COMMENT" , r"//.*"), # Comment
-
+        ('MOD', r'%'), # Modulo operato
+        
         # Other
         ("ID", r"[A-Za-z0-9_]+"),  # Identifiers (allowing alphanumeric characters and underscore)
         ("NEWLINE", r"\n"), # Line endings
