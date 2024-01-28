@@ -1,0 +1,10 @@
+let a: Int = 10
+when a {
+	== 10 -> {
+		let b: Int = 15	
+	},
+	> 10 -> {
+
+	}, // Comma is optional
+	? -> {  }
+}
