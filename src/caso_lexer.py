@@ -23,11 +23,22 @@ class CASOLexer:
 
         # Keywords
         ('LET', r'\blet\b'), # Let keyword, used for variable declaration
+        ('WHEN', r'\bwhen\b'), # When keyword, used for pattern matching
+
+        # Comparison operators
+        ('EQ', r'=='), # Equality operator
+        ('NEQ', r'!='), # Inequality operator
+        ('LT', r'<'), # Less than operator
+        ('LE', r'<='), # Less than or equal to operator
+        ('GT', r'>'), # Greater than operator
+        ('GE', r'>='), # Greater than or equal to operator
+        ('UKN', r'\?'), # Unknown operator (used for pattern matching)
 
         # Operators
         ('ASSIGN', r'='), # Assignment operator
         ('REASSIGN', r':='), # Reassignment operator
         ('TYPE_ASSIGN', r':' ), # Type assignment operator
+        ('ARROW', r'->'), # Arrow operator (used for function declarations)')
 
         # Characters
         ('OPEN_PAREN', r'\('), # Open parenthesis' 
@@ -40,7 +51,6 @@ class CASOLexer:
         ("COMMA", r","), # Comma
         ("SEMICOLON", r";"), # Semicolon
         ('EXCLAMATION', r'!'), # Exclamation mark
-        ('QUESTION', r'\?'), # Question mark
 
         # Arithmetic operators (putting them after the other operators to avoid conflicts)
         ('PLUS', r'\+'), # Addition operator
@@ -48,7 +58,7 @@ class CASOLexer:
         ('MUL', r'\*'), # Multiplication operator
         ('DIV', r'/'), # Division operator
         ('MOD', r'%'), # Modulo operato
-        
+
         # Other
         ("ID", r"[A-Za-z0-9_]+"),  # Identifiers (allowing alphanumeric characters and underscore)
         ("NEWLINE", r"\n"), # Line endings

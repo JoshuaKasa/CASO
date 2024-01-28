@@ -7,6 +7,8 @@ class NodeType(Enum):
     VARIABLE_DECLARATION = 1
     VARIABLE_ASSIGNMENT = 2
     EXPRESSION = 3
+    WHEN = 4
+    MATCHCASE = 5
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -35,6 +37,25 @@ class ASSIGNMENTnode(ASTnode):
     def __repr__(self):
         return f"ASSIGNMENTnode({repr(self.variable_name)}, {repr(self.variable_value)})"
 
+class WHENnode(ASTnode):
+    def __init__(self, variable_name, match_cases):
+        super().__init__(NodeType.WHEN)
+        self.variable_name = variable_name
+        self.match_cases = match_cases
+
+    def __repr__(self):
+        return f"WHENnode({repr(self.variable_name)}, {repr(self.match_cases)})"
+
+class MATCHCASEnode(ASTnode):
+    def __init__(self, match_type, match_value=None):
+        super().__init__(NodeType.MATCHCASE)
+        self.match_type = match_type
+        self.match_value = match_value
+        self.children = [] # What happens if the match case is matched
+
+    def __repr__(self):
+        return f"MATCHCASEnode({repr(self.match_type)}, {repr(self.match_value)}, {repr(self.children)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -45,6 +66,7 @@ class CASOParser:
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN']
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
+    COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN']
 
     def parse(self):
         while self.current_position < len(self.tokens):
@@ -58,6 +80,8 @@ class CASOParser:
             self.parse_declaration()
         elif current_token.type == "ID":
             self.parse_assignment()
+        elif current_token.type == "WHEN":
+            self.parse_when()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -90,11 +114,14 @@ class CASOParser:
         if variable_type_token.type not in self.TYPES:
             raise CASOSyntaxError(f"Expected variable type, got {variable_type_token.type}", variable_type_token.line_num, variable_type_token.char_pos)
         
+        # Check if the variable type is a list
+        is_list = False
         if variable_type_token.type == "LIST": # This means that the variable type is a list
             variable_type = self.parse_list()
+            is_list = True # Set the is_list flag to True
         else:
             variable_type = variable_type_token.value
-        self.current_position += 1 # Skip the variable type token
+            self.current_position += 1 # Skip the variable type token
 
         # Now should come the assignment operator
         assignment_token = self.tokens[self.current_position]
@@ -103,8 +130,10 @@ class CASOParser:
 
         # Now should come the variable value, which can be either an expression or a list
         self.current_position += 1 # Skip the assignment token
-        variable_value_token = self.tokens[self.current_position]
-        variable_value = self.parse_expression()
+        if is_list:
+            variable_value = self.parse_list_expression()
+        else:
+            variable_value = self.parse_expression()
 
         # After all the above, we can add the declaration node to the list of nodes
         append_node = DECLARATIONnode(variable_name, variable_type, variable_value)
@@ -196,10 +225,10 @@ class CASOParser:
     def parse_list(self):
         # Checking for correct syntax
         self.current_position += 1 # Skip the LIST token
-        list_content_type = 'List['
         open_bracket_token = self.tokens[self.current_position]
         if open_bracket_token.type != "OPEN_BRACKET":
             raise CASOSyntaxError(f"Expected open bracket, got {open_bracket_token.type}", open_bracket_token.line_num, open_bracket_token.char_pos)
+        list_content_type = 'List['
 
         # Recursively parse the list
         self.current_position += 1 # Skip the open bracket token
@@ -211,14 +240,121 @@ class CASOParser:
             raise CASOSyntaxError(f"Expected close bracket, got {close_bracket_token.type}", close_bracket_token.line_num, close_bracket_token.char_pos)
 
         # Finally finish parsing the list
+        self.current_position += 1 # Skip the close bracket token
         return list_content_type + ']'
 
     def parse_list_content(self):
         current_token = self.tokens[self.current_position]
         if current_token.type == "LIST": # Checking if the list contains another list
-            self.parse_list()
+            return self.parse_list() 
         elif current_token.type in self.TYPES: # Checking if the list contains a primitive type
             self.current_position += 1 # Skip the type token
             return current_token.value
         else:
             raise CASOSyntaxError(f"Expected list content, got {current_token.type}", current_token.line_num, current_token.char_pos)
+
+    # Method that will parse the when statement
+    def parse_when(self):
+        self.current_position += 1 # Skip the WHEN token
+        if self.tokens[self.current_position].type != 'ID':
+            raise CASOSyntaxError(f"Expected variable name, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Checking if the variable name is in the dictionary of variables
+        variable_name = self.tokens[self.current_position].value
+        if variable_name not in self.variables:
+            raise CASOSyntaxError(f"Variable {variable_name} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        
+        # Correct syntax check
+        self.current_position += 1 # Skip the variable name token
+        if self.tokens[self.current_position].type != 'OPEN_BRACE':
+            raise CASOSyntaxError(f"Expected open bracket, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Pattern matching for the variable
+        self.current_position += 1  # Skip the open brace token
+        match_cases = []
+
+        while True:
+            # Skip any newline tokens
+            while self.tokens[self.current_position].type == 'NEWLINE':
+                self.current_position += 1
+
+            # Break the loop if the next token is a closing brace
+            if self.tokens[self.current_position].type == 'CLOSE_BRACE':
+                break
+
+            match_case = self.parse_pattern()
+            match_cases.append(match_case)
+
+            # Move to the next token and check if it's a comma, a closing brace, or the start of a new match case
+            self.current_position += 1
+            while self.tokens[self.current_position].type == 'NEWLINE':
+                self.current_position += 1
+
+            if self.tokens[self.current_position].type == 'COMMA':
+                self.current_position += 1  # Skip the comma token
+            elif self.tokens[self.current_position].type == 'CLOSE_BRACE':
+                break  # End of the `when` block
+            elif self.tokens[self.current_position].type in self.COMPARISON_OPERATORS:
+                continue  # Start of a new MATCHCASEnode
+            else:
+                raise CASOSyntaxError(f"Expected comma, closing brace, or a pattern operator, got {self.tokens[self.current_position].type}", 
+                                      self.tokens[self.current_position].line_num, 
+                                      self.tokens[self.current_position].char_pos)
+
+        self.current_position += 1  # Skip the close brace token
+        append_node = WHENnode(variable_name, match_cases)
+        self.nodes.append(append_node)
+
+    def parse_pattern(self):
+        # Skip any newlines or unexpected tokens at the beginning
+        while self.tokens[self.current_position].type in ['NEWLINE']:
+            self.current_position += 1
+
+        # Now we are at the beginning of the pattern
+        if self.tokens[self.current_position].type not in self.COMPARISON_OPERATORS:
+            raise CASOSyntaxError(f"Expected pattern operator, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        match_type = self.tokens[self.current_position].type # Saving the match type
+
+        # If the match type is UKN, then we don't need to check for value syntax
+        match_value = None
+        if match_type != 'UKN':
+            # Checking for value syntax, here can go: variables, numbers, list values, false, true, unknown, but can't go: expressions or lists 
+            self.current_position += 1 # Skip the comparison operator token
+            if self.tokens[self.current_position].type == 'ID':
+                # Checking if the variable is declared
+                if self.tokens[self.current_position].value not in self.variables:
+                    raise CASOSyntaxError(f"Variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            match_value = self.tokens[self.current_position].value # Saving the match value
+
+        # Checking for arrow syntax
+        self.current_position += 1 # Skip the value token
+        if self.tokens[self.current_position].type != 'ARROW':
+            raise CASOSyntaxError(f"Expected arrow, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Checking for action 
+        self.current_position += 1 # Skip the arrow token
+        if self.tokens[self.current_position].type != 'OPEN_BRACE':
+            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Instantiating the match case node
+        self.current_position += 1 # Skip the open brace token
+        match_case_node = MATCHCASEnode(match_type, match_value)
+
+        # Parsing the body of the match case
+        while self.tokens[self.current_position].type != 'CLOSE_BRACE':
+            action_node = self.parse_action()
+            match_case_node.children.append(action_node)
+
+        # Returning the match case node
+        self.current_position += 1 # Skip the close brace token
+        return match_case_node
+
+    # Method that will parse the action statement
+    def parse_action(self):
+        # Inside actions can go any statement, whatever is valid
+        # NOTE: FOR FUTURE REFERENCE, WE HAVE ALREADY SKIPPED THE OPEN BRACE TOKEN
+        while self.tokens[self.current_position].type != 'CLOSE_BRACE':
+            self.parse_statement()
+
+        action_node = self.nodes.pop()
+        return action_node
