@@ -24,6 +24,7 @@ class CASOLexer:
         # Keywords
         ('LET', r'\blet\b'), # Let keyword, used for variable declaration
         ('WHEN', r'\bwhen\b'), # When keyword, used for pattern matching
+        ('FUNCTION', r'\bfnc\b'), # Function keyword, used for function declaration
 
         # Comparison operators
         ('EQ', r'=='), # Equality operator
@@ -38,7 +39,8 @@ class CASOLexer:
         ('ASSIGN', r'='), # Assignment operator
         ('REASSIGN', r':='), # Reassignment operator
         ('TYPE_ASSIGN', r':' ), # Type assignment operator
-        ('ARROW', r'->'), # Arrow operator (used for function declarations)')
+        ('ARROW', r'->'), # Arrow operator 
+        ('PIPE', r'\|'), # Pipe operator
 
         # Characters
         ('OPEN_PAREN', r'\('), # Open parenthesis' 

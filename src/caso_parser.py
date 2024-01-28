@@ -9,6 +9,9 @@ class NodeType(Enum):
     EXPRESSION = 3
     WHEN = 4
     MATCHCASE = 5
+    FUNCTION_DECLARATION = 6
+    FUNCTION_CALL = 7
+    RETURN = 8
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -56,12 +59,41 @@ class MATCHCASEnode(ASTnode):
     def __repr__(self):
         return f"MATCHCASEnode({repr(self.match_type)}, {repr(self.match_value)}, {repr(self.children)})"
 
+class FUNCTIONDECLARATIONnode(ASTnode):
+    def __init__(self, function_name, function_args, return_type, function_body):
+        super().__init__(NodeType.FUNCTION_DECLARATION)
+        self.function_name = function_name
+        self.function_args = function_args
+        self.return_type = return_type
+        self.function_body = function_body
+
+    def __repr__(self):
+        return f"FUNCTIONDECLARATIONnode({repr(self.function_name)}, {repr(self.function_args)}, {repr(self.return_type)}, {repr(self.function_body)})"
+
+class FUNCTIONCALLnode(ASTnode):
+    def __init__(self, function_name, function_args):
+        super().__init__(NodeType.FUNCTION_CALL)
+        self.function_name = function_name
+        self.function_args = function_args
+
+    def __repr__(self):
+        return f"FUNCTIONCALLnode({repr(self.function_name)}, {repr(self.function_args)})"
+
+class RETURNnode(ASTnode):
+    def __init__(self, return_value):
+        super().__init__(NodeType.RETURN)
+        self.return_value = return_value
+
+    def __repr__(self):
+        return f"RETURNnode({repr(self.return_value)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.current_position = 0
         self.nodes = [] # This will be the list of nodes that will be returned by the parse() method
         self.variables = {} # This will be the dictionary of variables that will be returned by the parse() method
+        self.functions = {} # This will be the dictionary of functions that will be returned by the parse() method    
 
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN']
@@ -82,6 +114,10 @@ class CASOParser:
             self.parse_assignment()
         elif current_token.type == "WHEN":
             self.parse_when()
+        elif current_token.type == "FUNCTION":
+            self.parse_function_declaration()
+        elif current_token.type == "PIPE":
+            self.parse_return()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -358,3 +394,102 @@ class CASOParser:
 
         action_node = self.nodes.pop()
         return action_node
+
+    # Method that will parse the function definition
+    def parse_function_declaration(self):
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the FNC token
+        if self.tokens[self.current_position].type != 'ID':
+            raise CASOSyntaxError(f"Expected function name, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Checking if the function name is already declared
+        function_name = self.tokens[self.current_position].value # Saving the function name
+        if function_name in self.functions:
+            raise CASOSyntaxError(f"Function {function_name} already declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the function name token
+        if self.tokens[self.current_position].type != 'OPEN_PAREN':
+            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the parameters
+        self.current_position += 1 # Skip the open parenthesis token
+        parameters = {} # Dictionary that will hold the parameters
+        while self.tokens[self.current_position].type != 'CLOSE_PAREN':
+            if self.tokens[self.current_position].type != 'ID':
+                raise CASOSyntaxError(f"Expected parameter name, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            parameter_name = self.tokens[self.current_position].value # Saving the parameter name
+            # Adding the parameter to the dictionary
+            if parameter_name in parameters:
+                raise CASOSyntaxError(f"Parameter {parameter_name} already declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            # Adding the parameter to the variables (so that it can be used inside the function)
+            self.variables[parameter_name] = None
+            
+            # Assigning type to the parameter
+            self.current_position += 1 # Skip the parameter name token
+            if self.tokens[self.current_position].type != 'TYPE_ASSIGN':
+                raise CASOSyntaxError(f"Expected type assignment, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            self.current_position += 1 # Skip the type assignment token
+            if self.tokens[self.current_position].type not in self.TYPES:
+                raise CASOSyntaxError(f"Expected type, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            parameter_type = self.tokens[self.current_position].type
+            parameters[parameter_name] = parameter_type
+
+            # Checking for comma or close parenthesis
+            self.current_position += 1 # Skip the type token
+            if self.tokens[self.current_position].type == 'COMMA':
+                self.current_position += 1 # Skip the comma token
+            elif self.tokens[self.current_position].type == 'CLOSE_PAREN':
+                break
+            else:
+                raise CASOSyntaxError(f"Expected comma or close parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the close parenthesis token
+        if self.tokens[self.current_position].type != 'TYPE_ASSIGN':
+            raise CASOSyntaxError(f"Expected type assignment, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Assigning type to the function
+        self.current_position += 1 # Skip the type assignment token
+        if self.tokens[self.current_position].type not in self.TYPES:
+            raise CASOSyntaxError(f"Expected type, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        function_type = self.tokens[self.current_position].type
+        
+        # Checking for the function body
+        self.current_position += 1 # Skip the type token
+        if self.tokens[self.current_position].type != 'OPEN_BRACE':
+            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the body of the function
+        self.current_position += 1 # Skip the open brace token
+        function_body = []
+        while self.tokens[self.current_position].type != 'CLOSE_BRACE':
+            function_body.append(self.parse_statement())
+
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the close brace token
+        if self.tokens[self.current_position].type != 'NEWLINE':
+            raise CASOSyntaxError(f"Expected new line, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Append the function definition to the functions dictionary
+        self.functions[function_name] = (parameters, function_type, function_body)
+
+        # Append the function definition to the AST
+        function_definition_node = FUNCTIONDECLARATIONnode(function_name, parameters, function_type, function_body)
+        self.nodes.append(function_definition_node)
+
+        # Removing all the parameters from the variables dictionary
+        for parameter in parameters:
+            self.variables.pop(parameter)
+
+    def parse_return(self):
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the PIPE token
+        if self.tokens[self.current_position].type == 'ID':
+            return_value = self.parse_expression()
+        else:
+            raise CASOSyntaxError(f"Expected ID, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Append the return statement to the AST
+        return_node = RETURNnode(return_value)
+        self.nodes.append(return_node)

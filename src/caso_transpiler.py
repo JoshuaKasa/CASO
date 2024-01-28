@@ -59,6 +59,12 @@ class CASOTranspiler:
                 self.transpile_when(node)
             elif node.node_type == NodeType.MATCHCASE:
                 self.transpile_matchcase(node)
+            elif node.node_type == NodeType.FUNCTION_DECLARATION:
+                pass
+            elif node.node_type == NodeType.FUNCTION_CALL:
+                pass
+            elif node.node_type == NodeType.RETURN:
+                pass
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
