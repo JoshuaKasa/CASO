@@ -16,6 +16,20 @@ class CASOTranspiler:
 
         ''' # This will be the transpiled code that will be returned by the transpile() method
         self.create_file = create_file # This will be used to determine whether or not to create a file
+    OPERATORS = {
+        'PLUS': '+',
+        'MINUS': '-',
+        'MUL': '*',
+        'DIV': '/',
+        'MOD': '%',
+        'EQ': '==',
+        'NEQ': '!=',
+        'LT': '<',
+        'LE': '<=',
+        'GT': '>',
+        'GE': '>=',
+        'UKN': '?'
+    }
 
     def transpile(self) -> str:
         for node in self.ast:
@@ -41,6 +55,10 @@ class CASOTranspiler:
                 self.transpile_declaration(node)
             elif node.node_type == NodeType.VARIABLE_ASSIGNMENT:
                 self.transpile_assignment(node)
+            elif node.node_type == NodeType.WHEN:
+                self.transpile_when(node)
+            elif node.node_type == NodeType.MATCHCASE:
+                self.transpile_matchcase(node)
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -53,3 +71,41 @@ class CASOTranspiler:
         self.transpiled_code += f'''
         {node.variable_name} = {node.variable_value};
         '''
+
+    def transpile_when(self, node):
+        for i, matchcase in enumerate(node.match_cases):
+            self.transpile_matchcase(matchcase, node.variable_name, i) 
+
+    def transpile_matchcase(self, node, variable_name=None, case_number=0):
+        if variable_name == None:
+            variable_name = node.variable_name
+
+        operator = self.OPERATORS[node.match_type]
+        if operator == '?':
+            self.transpiled_code += f'''
+                else {{
+                '''
+            for statement in node.children:
+                self.transpile_node(statement)
+            self.transpiled_code += '''
+            }
+            '''
+        else:
+            if case_number == 0:
+                self.transpiled_code += f'''
+                if ({variable_name} {operator} {node.match_value}) {{
+                '''
+                for statement in node.children:
+                    self.transpile_node(statement)
+                self.transpiled_code += '''
+                }
+                '''
+            else:
+                self.transpiled_code += f'''
+                else if ({variable_name} {operator} {node.match_value}) {{
+                '''
+                for statement in node.children:
+                    self.transpile_node(statement)
+                self.transpiled_code += '''
+                }
+                '''
