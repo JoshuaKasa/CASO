@@ -4,7 +4,7 @@ import caso_transpiler
 
 def main() -> None:
     # Reading the source code from the test file
-    source_code = open('test\\test_1.caso', 'r').read()
+    source_code = open('test\\test_2.caso', 'r').read()
 
     # ---------------------- LEXER ----------------------
     lexer = caso_lexer.CASOLexer(source_code)
@@ -21,7 +21,7 @@ def main() -> None:
     print() # Separation
 
     # ------------------ TRANSPILER ----------------------
-    transpiler = caso_transpiler.CASOTranspiler(nodes, file_path='build\\build_1.java')
+    transpiler = caso_transpiler.CASOTranspiler(nodes, file_path='build\\build_2.java')
     source = transpiler.transpile()
     print(source)
 

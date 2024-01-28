@@ -19,7 +19,7 @@
         
         x = z + 1;
         
-        list[int] a = ;
+        list[list[int]] a = [1, 2, 3, 4];
         
             }
         }
