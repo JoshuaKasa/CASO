@@ -1,0 +1,4 @@
+fnc add(a: Int, b: Int): Int {
+	let c: Int = a + b
+	| c
+}
