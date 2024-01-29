@@ -28,6 +28,9 @@ class CASOLexer:
         ('LET', r'\blet\b'), # Let keyword, used for variable declaration
         ('WHEN', r'\bwhen\b'), # When keyword, used for pattern matching
         ('FUNCTION', r'\bfnc\b'), # Function keyword, used for function declaration
+        ('IF', r'\bif\b'), # If keyword, used for if statements
+        ('ELSE', r'\belse\b'), # Else keyword, used for else statements
+        ('ELSIF', r'\belsif\b'), # Else if keyword, used for else if statements
 
         # Comparison operators
         ('EQ', r'=='), # Equality operator
@@ -37,13 +40,15 @@ class CASOLexer:
         ('GT', r'>'), # Greater than operator
         ('GE', r'>='), # Greater than or equal to operator
         ('UKN', r'\?'), # Unknown operator (used for pattern matching)
+        ('AND', r'&&'), # And operator
+        ('OR', r'\|\|'), # Or operator
 
         # Operators
         ('ASSIGN', r'='), # Assignment operator
         ('REASSIGN', r':='), # Reassignment operator
         ('TYPE_ASSIGN', r':' ), # Type assignment operator
         ('ARROW', r'->'), # Arrow operator 
-        ('PIPE', r'\|'), # Pipe operator
+        ('PIPE', r'\|'), # Pipe operator (for now used for returns)
 
         # Characters
         ('OPEN_PAREN', r'\('), # Open parenthesis' 
