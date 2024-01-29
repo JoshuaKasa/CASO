@@ -1,4 +1,10 @@
-# TODO: Finish implementing list parsing
+# TODO: Finish implementing list parsing. (DONE)
+# TODO: Implement function calling, we already got function declaration done.
+# TODO: Finishing if, elsif and else statements.
+#   - If statements are done.
+#   - Else statements are yet to do
+#   - Elsif are throwing some kind of error: `An error occurred: 'NoneType' object has no attribute 'type'`
+# TODO: Adding new type of loop, for loops are boring.
 
 from enum import Enum
 from caso_exception import CASOSyntaxError, CASOWarning
@@ -12,6 +18,9 @@ class NodeType(Enum):
     FUNCTION_DECLARATION = 6
     FUNCTION_CALL = 7
     RETURN = 8
+    IF = 9
+    ELSE = 10
+    ELSIF = 11
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -87,6 +96,32 @@ class RETURNnode(ASTnode):
     def __repr__(self):
         return f"RETURNnode({repr(self.return_value)})"
 
+class IFnode(ASTnode):
+    def __init__(self, condition):
+        super().__init__(NodeType.IF)
+        self.condition = condition
+        self.if_body = [] # Body of the if statement
+
+    def __repr__(self):
+        return f"IFnode({repr(self.condition)}, {repr(self.if_body)})"
+
+class ELSEnode(ASTnode):
+    def __init__(self):
+        super().__init__(NodeType.ELSE)
+        self.else_body = [] # Body of the else statement
+
+    def __repr__(self):
+        return f"ELSEnode({repr(self.else_body)})"
+
+class ELSIFnode(ASTnode):
+    def __init__(self, condition):
+        super().__init__(NodeType.ELSIF)
+        self.condition = condition
+        self.elsif_body = [] # Body of the elsif statement
+
+    def __repr__(self):
+        return f"ELSIFnode({repr(self.condition)}, {repr(self.elsif_body)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -98,7 +133,7 @@ class CASOParser:
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN', 'EMPTY']
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
-    COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'MOD']
+    COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND'] + ARITHMETIC_OPERATORS
 
     # Scoping variables
     current_scope = 'global' # This will be the current scope
@@ -122,6 +157,13 @@ class CASOParser:
             self.parse_function_declaration()
         elif current_token.type == "PIPE":
             self.parse_return()
+        elif current_token.type == "IF":
+            self.parse_if()
+        elif current_token.type == 'ELSIF':
+            self.parse_elsif()
+        elif current_token.type == 'ELSE':
+            pass
+            # TODO: Implement else parsing
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -217,7 +259,7 @@ class CASOParser:
 
         # Collect all the tokens until the end of the line
         while self.current_position < len(self.tokens) and self.tokens[self.current_position].type != 'NEWLINE':
-            if self.tokens[self.current_position].type in self.ARITHMETIC_OPERATORS:
+            if self.tokens[self.current_position].type in self.COMPARISON_OPERATORS:
                 expression_tokens.append(self.tokens[self.current_position])
             elif self.tokens[self.current_position].type == 'ID':
                 # Checking if the variable is declared
@@ -234,6 +276,34 @@ class CASOParser:
         # Skip the 'NEWLINE' token
         if self.current_position < len(self.tokens) and self.tokens[self.current_position].type == 'NEWLINE':
             self.current_position += 1
+
+        # Convert to raw string (ensuring all values are strings)
+        expression_string = ' '.join(str(token.value) for token in expression_tokens)
+        return expression_string
+
+    # This will parse until a certain token is found
+    def parse_until(self, token_type: str) -> str:
+        expression_tokens = []
+
+        # Collect all the tokens until the end of the line
+        while self.current_position < len(self.tokens) and self.tokens[self.current_position].type != token_type:
+            if self.tokens[self.current_position].type in self.COMPARISON_OPERATORS:
+                expression_tokens.append(self.tokens[self.current_position])
+            elif self.tokens[self.current_position].type == 'ID':
+                # Checking if the variable is declared
+                if self.tokens[self.current_position].value in self.variables:
+                    expression_tokens.append(self.tokens[self.current_position])
+                else:
+                    raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            elif self.tokens[self.current_position].type == 'NUMBER':
+                expression_tokens.append(self.tokens[self.current_position])
+            else:
+                raise CASOSyntaxError(f"Unexpected token {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            self.current_position += 1
+
+        # Skip the token
+        if self.current_position < len(self.tokens) and self.tokens[self.current_position].type == token_type:
+            self.current_position += 1 # Skip the token
 
         # Convert to raw string (ensuring all values are strings)
         expression_string = ' '.join(str(token.value) for token in expression_tokens)
@@ -492,3 +562,55 @@ class CASOParser:
         # Append the return statement to the AST
         return_node = RETURNnode(return_value)
         self.nodes.append(return_node)
+
+    # If, else, elsif
+    def parse_if(self):
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the IF token
+        if self.tokens[self.current_position].type != 'OPEN_PAREN':
+            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the condition
+        self.current_position += 1 # Skip the open parenthesis token
+        condition = self.parse_until('CLOSE_PAREN') # We already skipped the close parenthesis token
+
+        # Checking for correct syntax
+        if self.tokens[self.current_position].type != 'OPEN_BRACE':
+            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the body
+        self.current_position += 1 # Skip the open brace token
+        if_node = IFnode(condition)
+        body = self.parse_action() # We already skipped the close brace token
+        if_node.if_body = body
+
+        # Adding the if statement to the AST
+        self.nodes.append(if_node)
+
+    
+    def parse_elsif(self):
+        # Checking if previous node was an if or elsif node
+        if not isinstance(self.nodes[-1], IFnode) and not isinstance(self.nodes[-1], ELSIFnode):
+            raise CASOSyntaxError(f"Expected if or elsif before node, got {self.nodes[-1].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the ELSIF token
+        if self.tokens[self.current_position].type != 'OPEN_PAREN':
+            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the condition
+        self.current_position += 1 # Skip the open parenthesis token
+        condition = self.parse_until('CLOSE_PAREN') # We already skipped the close parenthesis token
+
+        # Checking for correct syntax   
+        if self.tokens[self.current_position].type != 'OPEN_BRACE':
+            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the body
+        self.current_position += 1 # Skip the open brace token
+        elsif_node = ELSIFnode(condition)
+        body = self.parse_action()
+        elsif_node.elsif_body = body
+
+        # Adding the elsif statement to the AST
+        self.nodes.append(elsif_node)
