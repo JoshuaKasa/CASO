@@ -60,11 +60,11 @@ class CASOTranspiler:
             elif node.node_type == NodeType.MATCHCASE:
                 self.transpile_matchcase(node)
             elif node.node_type == NodeType.FUNCTION_DECLARATION:
-                pass
+                self.transpile_function_declaration(node)
             elif node.node_type == NodeType.FUNCTION_CALL:
                 pass
             elif node.node_type == NodeType.RETURN:
-                pass
+                self.transpile_return(node)
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -115,3 +115,26 @@ class CASOTranspiler:
                 self.transpiled_code += '''
                 }
                 '''
+
+    def transpile_function_declaration(self, node):
+        self.transpiled_code += f'''
+        public static {node.return_type.lower()} {node.function_name}(
+        '''
+        # Iterating over the dictionary of parameters
+        for i, (param_name, param_type) in enumerate(node.function_args.items()):
+            self.transpiled_code += f"{param_type.lower()} {param_name}"
+            if i != len(node.function_args) - 1:
+                self.transpiled_code += ", "
+        self.transpiled_code += ") {\n"
+
+        # Iterating over the function body
+        for statement in node.function_body:
+            self.transpile_node(statement)
+        self.transpiled_code += '''
+        }
+        '''
+
+    def transpile_return(self, node):
+        self.transpiled_code += f'''
+        return {node.return_value};
+        '''
