@@ -2,3 +2,17 @@ fnc add(a: Int, b: Int): Int {
 	let c: Int = a + b
 	| c
 }
+
+fnc fizz_buzz(i: Int): Int {
+	when i {
+		% 3 -> {
+			| 0
+		},
+		% 5 -> {
+			| 1
+		},
+		? -> {
+			| 2
+		}
+	}
+}
