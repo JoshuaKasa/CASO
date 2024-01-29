@@ -20,6 +20,9 @@ class CASOLexer:
         ("FLOAT", r"\bFloat\b"), # Float type
         ("BOOL", r"\bBool\b"), # Bool type
         ('LIST', r'\bList\b'), # List type
+        ('STRING', r'\bString\b'), # String type
+        ('ANY', r'\bAny\b'), # Any type
+        ('EMPTY', r'\bEmpty\b'), # Empty type (used for void functions)
 
         # Keywords
         ('LET', r'\blet\b'), # Let keyword, used for variable declaration
