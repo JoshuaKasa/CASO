@@ -1,7 +1,7 @@
 # TODO: Finish implementing list parsing
 
 from enum import Enum
-from caso_exception import CASOSyntaxError
+from caso_exception import CASOSyntaxError, CASOWarning
 
 class NodeType(Enum):
     VARIABLE_DECLARATION = 1
@@ -60,12 +60,12 @@ class MATCHCASEnode(ASTnode):
         return f"MATCHCASEnode({repr(self.match_type)}, {repr(self.match_value)}, {repr(self.children)})"
 
 class FUNCTIONDECLARATIONnode(ASTnode):
-    def __init__(self, function_name, function_args, return_type, function_body):
+    def __init__(self, function_name, function_args, return_type):
         super().__init__(NodeType.FUNCTION_DECLARATION)
         self.function_name = function_name
         self.function_args = function_args
         self.return_type = return_type
-        self.function_body = function_body
+        self.function_body = [] # Body of the function
 
     def __repr__(self):
         return f"FUNCTIONDECLARATIONnode({repr(self.function_name)}, {repr(self.function_args)}, {repr(self.return_type)}, {repr(self.function_body)})"
@@ -96,9 +96,13 @@ class CASOParser:
         self.functions = {} # This will be the dictionary of functions that will be returned by the parse() method    
 
     # Useful constants
-    TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN']
+    TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN', 'EMPTY']
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
-    COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN']
+    COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'MOD']
+
+    # Scoping variables
+    current_scope = 'global' # This will be the current scope
+    current_node = None # This will be the current node
 
     def parse(self):
         while self.current_position < len(self.tokens):
@@ -310,9 +314,6 @@ class CASOParser:
         match_cases = []
 
         while True:
-            # Skip any newline tokens
-            while self.tokens[self.current_position].type == 'NEWLINE':
-                self.current_position += 1
 
             # Break the loop if the next token is a closing brace
             if self.tokens[self.current_position].type == 'CLOSE_BRACE':
@@ -363,37 +364,40 @@ class CASOParser:
             match_value = self.tokens[self.current_position].value # Saving the match value
 
         # Checking for arrow syntax
-        self.current_position += 1 # Skip the value token
+        self.current_position += 1  # Skip the value token
         if self.tokens[self.current_position].type != 'ARROW':
             raise CASOSyntaxError(f"Expected arrow, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
 
-        # Checking for action 
-        self.current_position += 1 # Skip the arrow token
+        self.current_position += 1  # Skip the arrow token
+        match_case_node = MATCHCASEnode(match_type, match_value)
+
+        # Ensure we have an opening brace for the case body
         if self.tokens[self.current_position].type != 'OPEN_BRACE':
             raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
 
-        # Instantiating the match case node
-        self.current_position += 1 # Skip the open brace token
-        match_case_node = MATCHCASEnode(match_type, match_value)
+        self.current_position += 1  # Skip the open brace token
+        match_case_body = self.parse_action()
+        match_case_node.children = match_case_body
 
-        # Parsing the body of the match case
-        while self.tokens[self.current_position].type != 'CLOSE_BRACE':
-            action_node = self.parse_action()
-            match_case_node.children.append(action_node)
-
-        # Returning the match case node
-        self.current_position += 1 # Skip the close brace token
         return match_case_node
 
-    # Method that will parse the action statement
+    # Method that will parse bodys of actions
     def parse_action(self):
-        # Inside actions can go any statement, whatever is valid
-        # NOTE: FOR FUTURE REFERENCE, WE HAVE ALREADY SKIPPED THE OPEN BRACE TOKEN
+        # NOTE: THIS WILL BE USED FOR HANDLING EVERYTHING UNTIL THE END OF THE BODY OF SOMETHING (WHEN, FUNCTIONS, ETC)
+        # Skip any newlines or unexpected tokens at the beginning 
+        # NOTE: ASSUME WE ALREADY SKIPPED THE OPEN BRACE TOKEN
+        while self.tokens[self.current_position].type in ['NEWLINE']:
+            self.current_position += 1
+
+        # Now we are at the beginning of the body
+        full_body = []
         while self.tokens[self.current_position].type != 'CLOSE_BRACE':
             self.parse_statement()
+            parsed_statement = self.nodes.pop() # Saving the parsed statement
+            full_body.append(parsed_statement)
 
-        action_node = self.nodes.pop()
-        return action_node
+        self.current_position += 1  # Skip the close brace token
+        return full_body
 
     # Method that will parse the function definition
     def parse_function_declaration(self):
@@ -462,20 +466,18 @@ class CASOParser:
 
         # Parsing the body of the function
         self.current_position += 1 # Skip the open brace token
-        function_body = []
-        while self.tokens[self.current_position].type != 'CLOSE_BRACE':
-            function_body.append(self.parse_statement())
+        function_definition_node = FUNCTIONDECLARATIONnode(function_name, parameters, function_type)
+        function_body = self.parse_action() # Parsing the body of the function
+        function_definition_node.function_body = function_body # No need to skip the close brace token, it is already skipped in the parse_action method
 
-        # Checking for correct syntax
-        self.current_position += 1 # Skip the close brace token
+         # Checking for correct syntax
         if self.tokens[self.current_position].type != 'NEWLINE':
             raise CASOSyntaxError(f"Expected new line, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
 
         # Append the function definition to the functions dictionary
-        self.functions[function_name] = (parameters, function_type, function_body)
+        self.functions[function_name] = (parameters, function_type)
 
         # Append the function definition to the AST
-        function_definition_node = FUNCTIONDECLARATIONnode(function_name, parameters, function_type, function_body)
         self.nodes.append(function_definition_node)
 
         # Removing all the parameters from the variables dictionary
@@ -485,10 +487,7 @@ class CASOParser:
     def parse_return(self):
         # Checking for correct syntax
         self.current_position += 1 # Skip the PIPE token
-        if self.tokens[self.current_position].type == 'ID':
-            return_value = self.parse_expression()
-        else:
-            raise CASOSyntaxError(f"Expected ID, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        return_value = self.parse_expression()
 
         # Append the return statement to the AST
         return_node = RETURNnode(return_value)
