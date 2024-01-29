@@ -2,28 +2,55 @@ import caso_parser
 import caso_lexer
 import caso_transpiler
 
-def main() -> None:
-    # Reading the source code from the test file
-    source_code = open('test\\test_3.caso', 'r').read()
+import sys
+import os
 
-    # ---------------------- LEXER ----------------------
-    lexer = caso_lexer.CASOLexer(source_code)
-    tokens = lexer.tokenize()
-    print(tokens)
+def main(input_path: str) -> None:
+    """
+    Main function to read source code, tokenize, parse, and transpile it.
 
-    print() # Separation
+    Args:
+    input_path (str): The path to the input source file.
+    """
 
-    # ---------------------- PARSER ----------------------
-    parser = caso_parser.CASOParser(tokens)
-    nodes = parser.parse()
-    print(nodes)  
+    # Constructing file paths
+    input_file_path = os.path.join('test', input_path)
+    output_file_name = input_path.replace('.caso', '.java')
+    output_file_path = os.path.join('build', output_file_name)
 
-    print() # Separation
+    try:
+        # Reading the source code from the test file
+        with open(input_file_path, 'r') as file:
+            source_code = file.read()
 
-    # ------------------ TRANSPILER ----------------------
-    transpiler = caso_transpiler.CASOTranspiler(nodes, file_path='build\\build_3.java')
-    source = transpiler.transpile()
-    print(source)
+        # ---------------------- LEXER ----------------------
+        # Tokenization of the source code
+        from caso_lexer import CASOLexer
+        lexer = CASOLexer(source_code)
+        tokens = lexer.tokenize()
+        print("Tokens:", tokens)
 
+        print("\n")  # Separation
+
+        # ---------------------- PARSER ----------------------
+        # Parsing the tokens into an AST
+        from caso_parser import CASOParser
+        parser = CASOParser(tokens)
+        nodes = parser.parse()
+        print("Parsed Nodes:", nodes)
+
+        print("\n")  # Separation
+
+        # ------------------ TRANSPILER ----------------------
+        # Transpiling the AST to target language
+        from caso_transpiler import CASOTranspiler
+        transpiler = CASOTranspiler(nodes, file_path=output_file_path)
+        source = transpiler.transpile()
+        print("Transpiled Source Code:\n", source)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Example of calling the main function
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1])
