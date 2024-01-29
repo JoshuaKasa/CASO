@@ -28,7 +28,9 @@ class CASOTranspiler:
         'LE': '<=',
         'GT': '>',
         'GE': '>=',
-        'UKN': '?'
+        'UKN': '?',
+        'AND': '&&',
+        'OR': '||'
     }
 
     def transpile(self) -> str:
@@ -65,6 +67,10 @@ class CASOTranspiler:
                 pass
             elif node.node_type == NodeType.RETURN:
                 self.transpile_return(node)
+            elif node.node_type == NodeType.IF:
+                self.transpile_if(node)
+            elif node.node_type == NodeType.ELSIF:
+                self.transpile_elsif(node)
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -137,4 +143,24 @@ class CASOTranspiler:
     def transpile_return(self, node):
         self.transpiled_code += f'''
         return {node.return_value};
+        '''
+
+    def transpile_if(self, node):
+        self.transpiled_code += f'''
+        if ({node.condition}) {{
+        '''
+        for statement in node.if_body:
+            self.transpile_node(statement)
+        self.transpiled_code += '''
+        }
+        '''
+
+    def transpile_elsif(self, node):
+        self.transpiled_code += f'''
+        else if ({node.condition}) {{
+        '''
+        for statement in node.elsif_body:
+            self.transpile_node(statement)
+        self.transpiled_code += '''
+        }
         '''
