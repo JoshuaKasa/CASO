@@ -13,3 +13,7 @@ class CASOSyntaxError(CASOException):
 class CASOTranspilerError(CASOException):
     def __init__(self, message):
         super().__init__(f"{message}")
+
+class CASOWarning():
+    def __init__(self, message, line_num, char_pos):
+        print(f"Warning: {message} at line {line_num}, character {char_pos}")
