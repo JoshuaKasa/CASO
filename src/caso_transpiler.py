@@ -5,6 +5,7 @@ from caso_exception import CASOTranspilerError
 class CASOTranspiler:
     def __init__(self, ast, file_path='caso_transpiled.java', create_file=True): 
         self.ast = ast
+        self.file_path = file_path
         self.file_name = file_path.split("\\")[-1].split(".")[0]
         self.transpiled_code = f'''
         // This is the general header template for the transpiled code
@@ -45,7 +46,7 @@ class CASOTranspiler:
 
         # Creating the file
         if self.create_file:
-            with open(f"{self.file_name}.java", "w") as file:
+            with open(f"{self.file_path}.java", "w") as file:
                 file.write(self.transpiled_code)
 
         # Returning the transpiled code as a string
