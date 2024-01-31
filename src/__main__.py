@@ -14,9 +14,11 @@ def main(input_path: str) -> None:
     """
 
     # Constructing file paths
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
     input_file_path = os.path.join('test', input_path)
     output_file_name = input_path.replace('.caso', '.java')
-    output_file_path = os.path.join('build', output_file_name)
+    output_file_path = os.path.join(script_dir, 'build', output_file_name)
 
     try:
         # Reading the source code from the test file
