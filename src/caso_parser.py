@@ -1,10 +1,11 @@
 # TODO: Finish implementing list parsing. (DONE)
 # TODO: Implement function calling, we already got function declaration done.
 # TODO: Finishing if, elsif and else statements.
-#   - If statements are done.
+#   - If statements are done. (DONE)
 #   - Else statements are yet to do
-#   - Elsif are throwing some kind of error: `An error occurred: 'NoneType' object has no attribute 'type'`
+#   - Elsif are throwing some kind of error: `An error occurred: 'NoneType' object has no attribute 'type'` (DONE)
 # TODO: Adding new type of loop, for loops are boring.
+# TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement.
 
 from enum import Enum
 from caso_exception import CASOSyntaxError, CASOWarning
@@ -586,13 +587,8 @@ class CASOParser:
 
         # Adding the if statement to the AST
         self.nodes.append(if_node)
-
     
-    def parse_elsif(self):
-        # Checking if previous node was an if or elsif node
-        if not isinstance(self.nodes[-1], IFnode) and not isinstance(self.nodes[-1], ELSIFnode):
-            raise CASOSyntaxError(f"Expected if or elsif before node, got {self.nodes[-1].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-
+    def parse_elsif(self):        
         # Checking for correct syntax
         self.current_position += 1 # Skip the ELSIF token
         if self.tokens[self.current_position].type != 'OPEN_PAREN':
