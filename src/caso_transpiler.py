@@ -72,6 +72,8 @@ class CASOTranspiler:
                 self.transpile_if(node)
             elif node.node_type == NodeType.ELSIF:
                 self.transpile_elsif(node)
+            elif node.node_type == NodeType.ELSE:
+                self.transpile_else(node)
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -161,6 +163,16 @@ class CASOTranspiler:
         else if ({node.condition}) {{
         '''
         for statement in node.elsif_body:
+            self.transpile_node(statement)
+        self.transpiled_code += '''
+        }
+        '''
+
+    def transpile_else(self, node):
+        self.transpiled_code += f'''
+        else {{
+        '''
+        for statement in node.else_body:
             self.transpile_node(statement)
         self.transpiled_code += '''
         }
