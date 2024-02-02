@@ -4,5 +4,8 @@ if (a + 1 - b > 0) {
 	let c: Int = a + b
 }
 elsif (a < 10) {
-	c := 10
+	c := c - 10
+}
+else {
+	c := c + 10
 }
