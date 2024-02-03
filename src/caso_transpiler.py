@@ -65,7 +65,7 @@ class CASOTranspiler:
             elif node.node_type == NodeType.FUNCTION_DECLARATION:
                 self.transpile_function_declaration(node)
             elif node.node_type == NodeType.FUNCTION_CALL:
-                pass
+                self.transpile_function_call(node)
             elif node.node_type == NodeType.RETURN:
                 self.transpile_return(node)
             elif node.node_type == NodeType.IF:
@@ -177,3 +177,13 @@ class CASOTranspiler:
         self.transpiled_code += '''
         }
         '''
+
+    def transpile_function_call(self, node):
+        self.transpiled_code += f'''
+            {node.function_name}(
+        '''
+        for i, arg in enumerate(node.function_args):
+            self.transpiled_code += f'{arg}'
+            if i != len(node.function_args) - 1:
+                self.transpiled_code += ', '
+        self.transpiled_code += ')'

@@ -1,11 +1,19 @@
 # TODO: Finish implementing list parsing. (DONE)
-# TODO: Implement function calling, we already got function declaration done.
-# TODO: Finishing if, elsif and else statements.
+
+# TODO: Implement function calling, we already got function declaration done. (IN PROGRESS)
+#   - I made the basic function call node and parsing but I have yet to implement the actual parsing of it, the main problems are:
+#   1. When using a if statement inside a function call, the parser throws a 'Unable to pop from an empty list' error.
+#   2. The function call node is not being parsed correctly, as I have to determine whether what I'm parsing is a function call or a variable assignment.
+
+# TODO: Finishing if, elsif and else statements. (DONE)
 #   - If statements are done. (DONE)
-#   - Else statements are yet to do
+#   - Else statements are yet to do. (DONE)
 #   - Elsif are throwing some kind of error: `An error occurred: 'NoneType' object has no attribute 'type'` (DONE)
+
 # TODO: Adding new type of loop, for loops are boring.
-# TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement.
+
+# TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement. (IN PROGRESS)
+# TODO: I gotta make it so that newline tokens are skipped or ignored in some way, I can't keep up with this shit, it gives me so many problems.
 
 from enum import Enum
 from caso_exception import CASOSyntaxError, CASOWarning
@@ -151,7 +159,10 @@ class CASOParser:
         if current_token.type == "LET":
             self.parse_declaration()
         elif current_token.type == "ID":
-            self.parse_assignment()
+            if self.tokens[self.current_position + 1].type == "ASSIGN":
+                self.parse_assignment()
+            else:
+                self.parse_function_call()
         elif current_token.type == "WHEN":
             self.parse_when()
         elif current_token.type == "FUNCTION":
@@ -163,8 +174,8 @@ class CASOParser:
         elif current_token.type == 'ELSIF':
             self.parse_elsif()
         elif current_token.type == 'ELSE':
-            pass
-            # TODO: Implement else parsing
+            self.parse_else()
+            # TODO: Implement else parsing (DONE)
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -282,28 +293,36 @@ class CASOParser:
         expression_string = ' '.join(str(token.value) for token in expression_tokens)
         return expression_string
 
-    # This will parse until a certain token is found
-    def parse_until(self, token_type: str) -> str:
+    # This method will parse a list expression
+    def parse_until(self, *token_types: str) -> str:
+        ''' 
+        This method will parse an expression until one of the specified token types is found, skipping the final token.
+
+        Parameters:
+        - token_types (str): The types of tokens to parse until (variable number of arguments)
+
+        Returns:
+        - expression_string (str): The parsed expression as a string
+        '''
         expression_tokens = []
 
-        # Collect all the tokens until the end of the line
-        while self.current_position < len(self.tokens) and self.tokens[self.current_position].type != token_type:
-            if self.tokens[self.current_position].type in self.COMPARISON_OPERATORS:
-                expression_tokens.append(self.tokens[self.current_position])
-            elif self.tokens[self.current_position].type == 'ID':
-                # Checking if the variable is declared
-                if self.tokens[self.current_position].value in self.variables:
-                    expression_tokens.append(self.tokens[self.current_position])
-                else:
-                    raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            elif self.tokens[self.current_position].type == 'NUMBER':
-                expression_tokens.append(self.tokens[self.current_position])
+        # Collect all the tokens until one of the specified token types is found, I gotta check for this fucking new lines every time, I gotta fix this shit
+        while self.current_position < len(self.tokens) and self.tokens[self.current_position].type not in token_types and self.tokens[self.current_position].type != 'NEWLINE':
+            token = self.tokens[self.current_position]
+            if token.type in self.COMPARISON_OPERATORS:
+                expression_tokens.append(token)
+            elif token.type == 'ID':
+                # Checking if the user is trying to call a function or use a variable (TODO)
+                if  
+
+            elif token.type == 'NUMBER':
+                expression_tokens.append(token)
             else:
-                raise CASOSyntaxError(f"Unexpected token {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+                raise CASOSyntaxError(f"Unexpected token {token.type}", token.line_num, token.char_pos)
             self.current_position += 1
 
-        # Skip the token
-        if self.current_position < len(self.tokens) and self.tokens[self.current_position].type == token_type:
+        # Skip the token if it matches one of the specified token types
+        if self.current_position < len(self.tokens) and self.tokens[self.current_position].type in token_types:
             self.current_position += 1 # Skip the token
 
         # Convert to raw string (ensuring all values are strings)
@@ -505,8 +524,7 @@ class CASOParser:
             if self.tokens[self.current_position].type != 'TYPE_ASSIGN':
                 raise CASOSyntaxError(f"Expected type assignment, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             self.current_position += 1 # Skip the type assignment token
-            if self.tokens[self.current_position].type not in self.TYPES:
-                raise CASOSyntaxError(f"Expected type, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            if self.tokens[self.current_position].type not in self.TYPES: raise CASOSyntaxError(f"Expected type, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             parameter_type = self.tokens[self.current_position].type
             parameters[parameter_name] = parameter_type
 
@@ -558,7 +576,7 @@ class CASOParser:
     def parse_return(self):
         # Checking for correct syntax
         self.current_position += 1 # Skip the PIPE token
-        return_value = self.parse_expression()
+        return_value = self.parse_until('NEWLINE') # We already skipped the new line token
 
         # Append the return statement to the AST
         return_node = RETURNnode(return_value)
@@ -610,3 +628,47 @@ class CASOParser:
 
         # Adding the elsif statement to the AST
         self.nodes.append(elsif_node)
+
+    def parse_else(self):
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the ELSE token
+        if self.tokens[self.current_position].type != 'OPEN_BRACE':
+            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the body
+        self.current_position += 1 # Skip the open brace token
+        else_node = ELSEnode()
+        body = self.parse_action()
+        else_node.else_body = body
+
+        # Adding the else statement to the AST
+        self.nodes.append(else_node)
+
+    def parse_function_call(self):
+        # Checking for correct syntax
+        function_name = self.tokens[self.current_position].value
+        self.current_position += 1 # Skip the function name token
+
+        # Checking if the function exists
+        if function_name not in self.functions:
+            raise CASOSyntaxError(f"Function {function_name} is not defined", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        if self.tokens[self.current_position].type != 'OPEN_PAREN':
+            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the parameters (parameters can also be expressions)
+        self.current_position += 1 # Skip the open parenthesis token
+        parameters = []
+        while True: # Since we already skip the close parenthesis token, we don't need to check for it
+            parameter = self.parse_until('COMMA', 'CLOSE_PAREN') # The method already skips the comma or close parenthesis token
+            parameters.append(parameter)
+            if parameter == '':
+                break
+        # So I don't know how to fix a bug (checking for the close parenthesis token) in the parse_until method, so imma just give it a temporary solution
+        if parameters[-1] == '':
+            parameters.pop(-1)
+
+        # We've already skipped the close parenthesis token
+        # Adding the function call to the AST
+        function_call_node = FUNCTIONCALLnode(function_name, parameters)
+        self.nodes.append(function_call_node)   
