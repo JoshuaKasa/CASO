@@ -1,4 +1,3 @@
 fnc fibonacci(n: Int): Int {
 	| 1
 }
-fibonacci(1)
