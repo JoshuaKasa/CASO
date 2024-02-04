@@ -2,6 +2,12 @@ let a: Int = 10
 let b: Int = 15
 if (a + 1 - b > 0) {
 	let c: Int = a + b
+		if (a > 0) {
+			c := c + 1
+					 if (c < 0) {
+							c := 1
+					 }
+		}
 }
 elsif (a < 10) {
 	c := c - 10
