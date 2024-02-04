@@ -1,9 +1,9 @@
 # TODO: Finish implementing list parsing. (DONE)
 
-# TODO: Implement function calling, we already got function declaration done. (IN PROGRESS)
+# TODO: Implement function calling, we already got function declaration done. (DONE)
 #   - I made the basic function call node and parsing but I have yet to implement the actual parsing of it, the main problems are:
-#   1. When using a if statement inside a function call, the parser throws a 'Unable to pop from an empty list' error.
-#   2. The function call node is not being parsed correctly, as I have to determine whether what I'm parsing is a function call or a variable assignment.
+#   1. When using a if statement inside a function call, the parser throws a 'Unable to pop from an empty list' error. (IN PROGRESS)
+#   2. The function call node is not being parsed correctly, as I have to determine whether what I'm parsing is a function call or a variable assignment. (DONE)
 
 # TODO: Finishing if, elsif and else statements. (DONE)
 #   - If statements are done. (DONE)
@@ -11,9 +11,7 @@
 #   - Elsif are throwing some kind of error: `An error occurred: 'NoneType' object has no attribute 'type'` (DONE)
 
 # TODO: Adding new type of loop, for loops are boring.
-
 # TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement. (IN PROGRESS)
-# TODO: I gotta make it so that newline tokens are skipped or ignored in some way, I can't keep up with this shit, it gives me so many problems.
 
 from enum import Enum
 from caso_exception import CASOSyntaxError, CASOWarning
@@ -159,7 +157,7 @@ class CASOParser:
         if current_token.type == "LET":
             self.parse_declaration()
         elif current_token.type == "ID":
-            if self.tokens[self.current_position + 1].type == "ASSIGN":
+            if self.tokens[self.current_position + 1].type == "REASSIGN":
                 self.parse_assignment()
             else:
                 self.parse_function_call()
@@ -312,9 +310,11 @@ class CASOParser:
             if token.type in self.COMPARISON_OPERATORS:
                 expression_tokens.append(token)
             elif token.type == 'ID':
-                # Checking if the user is trying to call a function or use a variable (TODO)
-                if  
-
+                # User is trying to call a variable (never in my life will I implement recursion)
+                if token.value in self.variables:
+                    expression_tokens.append(token)
+                else:
+                    raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             elif token.type == 'NUMBER':
                 expression_tokens.append(token)
             else:
