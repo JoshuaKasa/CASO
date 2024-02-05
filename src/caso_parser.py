@@ -2,8 +2,9 @@
 
 # TODO: Implement function calling, we already got function declaration done. (DONE)
 #   - I made the basic function call node and parsing but I have yet to implement the actual parsing of it, the main problems are:
-#   1. When using a if statement inside a function call, the parser throws a 'Unable to pop from an empty list' error. (IN PROGRESS)
+#   1. When using a if statement inside a function call, the parser throws a 'Unable to pop from an empty list' error. (DONE): This happened, not because of the function call, but because of the 'parse_action' function, it was popping even when the list was empty, throwing an error, I simply added a if check.
 #   2. The function call node is not being parsed correctly, as I have to determine whether what I'm parsing is a function call or a variable assignment. (DONE)
+#   3. Making it so that the transpiler, transpiles the function declarations outside of the main function. (IN PROGRESS)
 
 # TODO: Finishing if, elsif and else statements. (DONE)
 #   - If statements are done. (DONE)
@@ -28,6 +29,7 @@ class NodeType(Enum):
     IF = 9
     ELSE = 10
     ELSIF = 11
+    LOOP = 12
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -129,6 +131,18 @@ class ELSIFnode(ASTnode):
     def __repr__(self):
         return f"ELSIFnode({repr(self.condition)}, {repr(self.elsif_body)})"
 
+class LOOPnode(ASTnode):
+    def __init__(self, loop_variable, loop_start, loop_end, loop_guard=None):
+        super().__init__(NodeType.LOOP)
+        self.loop_variable = loop_variable
+        self.loop_start = loop_start
+        self.loop_end = loop_end
+        self.loop_guard = loop_guard
+        self.loop_body = [] # Body of the loop
+
+    def __repr__(self):
+        return f"LOOPnode({repr(self.loop_variable)}, {repr(self.loop_start)}, {repr(self.loop_end)}, {repr(self.loop_guard)}, {repr(self.loop_body)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -174,6 +188,8 @@ class CASOParser:
         elif current_token.type == 'ELSE':
             self.parse_else()
             # TODO: Implement else parsing (DONE)
+        elif current_token.type == 'LOOP':
+            self.parse_loop()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -483,6 +499,8 @@ class CASOParser:
         full_body = []
         while self.tokens[self.current_position].type != 'CLOSE_BRACE':
             self.parse_statement()
+            if not self.nodes: # Check if the nodes are empty
+                continue # If they are, continue to the next token
             parsed_statement = self.nodes.pop() # Saving the parsed statement
             full_body.append(parsed_statement)
 
@@ -672,3 +690,49 @@ class CASOParser:
         # Adding the function call to the AST
         function_call_node = FUNCTIONCALLnode(function_name, parameters)
         self.nodes.append(function_call_node)   
+
+    def parse_loop(self):
+        # Checking for correct syntax
+        self.current_position += 1 # Skip the LOOP token
+        if self.tokens[self.current_position].type != 'OPEN_PAREN':
+            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Syntax here should be (variable, expression to_keyword expression)
+        # Parsing the variable
+        self.current_position += 1 # Skip the open parenthesis token
+        variable = self.tokens[self.current_position].value
+        # Checking if the variable is already defined
+        if variable in self.variables:
+            raise CASOSyntaxError(f"Variable {variable} is already defined", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.variables[variable] = 'INTEGER'
+        self.current_position += 1 # Skip the variable token
+
+        if self.tokens[self.current_position].type != 'COMMA':
+            raise CASOSyntaxError(f"Expected comma, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.current_position += 1 # Skip the comma token
+
+        # Now should come the expression to_keyword expression
+        expression1 = self.parse_until('TO')
+        expression2 = self.parse_until('CLOSE_PAREN') # We already skipped the close parenthesis token
+
+        # Checking for correct syntax
+        # Here could come 2 things, 1 is a brace, the other is a guard clause
+        if self.tokens[self.current_position].type == 'OPEN_BRACE':
+            self.current_position += 1 # Skip the open brace token
+        elif self.tokens[self.current_position].type == 'PIPE':
+            self.current_position += 1 # Skip the PIPE token
+            guard_clause = self.parse_until('PIPE') # We already skipped the pipe token
+
+            if self.tokens[self.current_position].type != 'OPEN_BRACE':
+                raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            self.current_position += 1 # Skip the open brace token
+        else:
+            raise CASOSyntaxError(f"Expected open brace or guard clause, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+
+        # Parsing the body
+        loop_node = LOOPnode(variable, expression1, expression2)
+        body = self.parse_action()
+        loop_node.loop_body = body
+
+        # Adding the loop statement to the AST
+        self.nodes.append(loop_node)

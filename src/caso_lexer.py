@@ -31,6 +31,8 @@ class CASOLexer:
         ('IF', r'\bif\b'), # If keyword, used for if statements
         ('ELSE', r'\belse\b'), # Else keyword, used for else statements
         ('ELSIF', r'\belsif\b'), # Else if keyword, used for else if statements
+        ('LOOP', r'\bloop\b'), # Loop keyword, used for loops
+        ('TO', r'\bto\b'), # To keyword, used for loops
 
         # Comparison operators
         ('EQ', r'=='), # Equality operator
