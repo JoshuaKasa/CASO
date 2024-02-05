@@ -20,12 +20,13 @@ class CASOLexer:
         ("FLOAT", r"\bFloat\b"), # Float type
         ("BOOL", r"\bBool\b"), # Bool type
         ('LIST', r'\bList\b'), # List type
-        ('STRING', r'\bString\b'), # String type
+        ('STRING', r'\bStr\b'), # String type
         ('ANY', r'\bAny\b'), # Any type
         ('EMPTY', r'\bEmpty\b'), # Empty type (used for void functions)
 
         # Keywords
         ('LET', r'\blet\b'), # Let keyword, used for variable declaration
+        ('CONST', r'\bconst\b'), # Const keyword, used for constant declaration
         ('WHEN', r'\bwhen\b'), # When keyword, used for pattern matching
         ('FUNCTION', r'\bfnc\b'), # Function keyword, used for function declaration
         ('IF', r'\bif\b'), # If keyword, used for if statements
@@ -33,6 +34,14 @@ class CASOLexer:
         ('ELSIF', r'\belsif\b'), # Else if keyword, used for else if statements
         ('LOOP', r'\bloop\b'), # Loop keyword, used for loops
         ('TO', r'\bto\b'), # To keyword, used for loops
+
+        # LERSILER (Lexer, Parser, Transpiler) delimiters, these will be - likely - not used by the user but rather at the parser, transpiler and lexer level
+        ('NATIVE_JAVA_START', r'\bcaso___native_java_start\b'), # Native Java start keyword
+        ('NATIVE_JAVA_END', r'\bcaso___native_java_end\b'), # Native Java end keyword
+        ('PARSER_PAUSE', r'\bcaso___parser_pause\b'), # Parser pause keyword
+        ('PARSER_RESUME', r'\bcaso___parser_resume\b'), # Parser resume keyword
+        ('TRANSPILE_PAUSE', r'\bcaso___transpile_pause\b'), # Transpiler pause keyword
+        ('TRANSPILE_RESUME', r'\bcaso___transpile_resume\b'), # Transpiler resume keyword
 
         # Comparison operators
         ('EQ', r'=='), # Equality operator

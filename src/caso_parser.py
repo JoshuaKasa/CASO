@@ -4,15 +4,20 @@
 #   - I made the basic function call node and parsing but I have yet to implement the actual parsing of it, the main problems are:
 #   1. When using a if statement inside a function call, the parser throws a 'Unable to pop from an empty list' error. (DONE): This happened, not because of the function call, but because of the 'parse_action' function, it was popping even when the list was empty, throwing an error, I simply added a if check.
 #   2. The function call node is not being parsed correctly, as I have to determine whether what I'm parsing is a function call or a variable assignment. (DONE)
-#   3. Making it so that the transpiler, transpiles the function declarations outside of the main function. (IN PROGRESS)
+#   3. Making it so that the transpiler, transpiles the function declarations outside of the main function. (DONE)
 
 # TODO: Finishing if, elsif and else statements. (DONE)
 #   - If statements are done. (DONE)
 #   - Else statements are yet to do. (DONE)
 #   - Elsif are throwing some kind of error: `An error occurred: 'NoneType' object has no attribute 'type'` (DONE)
 
-# TODO: Adding new type of loop, for loops are boring.
-# TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement. (IN PROGRESS)
+# TODO: Adding new type of loop, for loops are boring. (DONE)
+# TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement. (IN PROGRESS - MOMENTARILY PAUSED)
+#
+# TODO: Fix local variable error:
+#   - The error consists on the fact that the parser puts all variables inside the same list and doesn't track the scope of the variables, so if you declare a variable inside a function, even if inside the Java code the variable is transpiled as local, the parser doesn't understand that and throws an error. (IN PROGRESS)
+#
+# TODO: Converting variable types into Java types directly from the parser.
 
 from enum import Enum
 from caso_exception import CASOSyntaxError, CASOWarning
@@ -30,6 +35,7 @@ class NodeType(Enum):
     ELSE = 10
     ELSIF = 11
     LOOP = 12
+    JAVA_SOURCE = 13
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -142,6 +148,14 @@ class LOOPnode(ASTnode):
 
     def __repr__(self):
         return f"LOOPnode({repr(self.loop_variable)}, {repr(self.loop_start)}, {repr(self.loop_end)}, {repr(self.loop_guard)}, {repr(self.loop_body)})"
+
+class JAVASOURCEnode(ASTnode):
+    def __init__(self, java_code):
+        super().__init__(NodeType.JAVA_SOURCE)
+        self.java_code = java_code
+
+    def __repr__(self):
+        return f"JAVASOURCEnode({repr(self.java_code)})"
 
 class CASOParser:
     def __init__(self, tokens):

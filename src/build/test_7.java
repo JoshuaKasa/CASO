@@ -28,6 +28,21 @@
         
         }
         
+        public static int power(
+        int base, int exponent) {
+
+        int result = 1;
+        
+        for (int x = 1; x <= exponent; x++) {
+        
+        result = result * base;
+        
+        }
+        
+        return result;
+        
+        }
+        
             public static void main(String[] args) {
 
         
