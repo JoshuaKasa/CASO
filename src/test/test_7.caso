@@ -14,3 +14,11 @@ fnc fibonacci(n: Int): Int {
 }
 
 fibonacci(7)
+
+fnc power(base: Int, exponent: Int): Int {
+    let result: Int = 1
+    loop (x, 1 to exponent) {
+        result := result * base
+    }
+    | result
+}
