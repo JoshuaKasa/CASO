@@ -3,7 +3,7 @@
         import java.util.Scanner;
         import java.util.ArrayList;
 
-        public class test_5 {
+        public class test_7 {
         
         public static int fibonacci(
         int n) {
@@ -12,14 +12,19 @@
         
         int b = 1;
         
-        return a;
+        n = n - 1;
+        
+        for (int i = 1; i <= n; i++) {
+        
+        int s = a + b;
+        
+        a = b;
+        
+        b = s;
         
         }
         
-        public static int add(
-        int a, int b) {
-
-        return a + b;
+        return a;
         
         }
         
@@ -27,9 +32,7 @@
 
         
             fibonacci(
-        5);
-            add(
-        1, 2 + 2 + 3);
+        7);
             }
         }
         
