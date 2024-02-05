@@ -1,0 +1,16 @@
+// This is the first actual function built with CASO, this is a very simple fibonacci function that demonstrates the syntax of my language, I'm pretty happy about it
+fnc fibonacci(n: Int): Int {
+	let a: Int = 0
+	let b: Int = 1
+
+	n := n - 1
+	loop (i, 1 to n) {
+		let s: Int = a + b
+		a := b
+		b := s
+	}
+
+	| a
+}
+
+fibonacci(7)
