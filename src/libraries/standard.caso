@@ -1,0 +1,16 @@
+fnc println(s: Str): Empty {
+	caso___native_java_start
+
+	System.out.println(s);
+
+	caso___native_java_stop
+}
+
+fnc read_line(prompt: Str): Str {
+	caso___native_java_start
+
+	System.out.print(prompt);
+	return new java.util.Scanner(System.in).nextLine();
+
+	caso___native_java_stop
+}

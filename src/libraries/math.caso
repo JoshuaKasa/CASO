@@ -1,0 +1,80 @@
+fnc power(base: Int, exponent: Int): Int {
+    let result: Int = 1
+    loop (i, 1 to exponent) {
+        result := result * base
+    }
+    | result
+}
+
+fnc sqrt(x: Int): Float {
+    caso___native_java_start
+    return (float)Math.sqrt(x);
+    caso___native_java_stop
+}
+
+fnc log(x: Float): Float {
+    caso___native_java_start
+    return (float)Math.log(x);
+    caso___native_java_stop
+}
+
+fnc sin(angle: Float): Float {
+    caso___native_java_start
+    return (float)Math.sin(angle);
+    caso___native_java_stop
+}
+
+fnc cos(angle: Float): Float {
+    caso___native_java_start
+    return (float)Math.cos(angle);
+    caso___native_java_stop
+}
+
+fnc tan(angle: Float): Float {
+    caso___native_java_start
+    return (float)Math.tan(angle);
+    caso___native_java_stop
+}
+
+fnc factorial(n: Int): Int {
+    if (n == 0) {
+        | 1
+    } 
+    else {
+        let result: Int = 1
+        loop (i, 1 to n) {
+            result := result * i
+        }
+        | result
+    }
+}
+
+fnc fibonacci(n: Int): Int {
+    let a: Int = 0
+    let b: Int = 1
+    loop (i, 0 to n - 1) {
+        let temp: Int = a
+        a := b
+        b := temp + b
+    }
+    | a
+}
+
+fnc gcd(a: Int, b: Int): Int {
+    if (b == 0) {
+        | a
+    } else {
+        | gcd(b, a % b)
+    }
+}
+
+fnc count_digits(n: Int): Int {
+    let count: Int = 0
+    let num: Int = n
+    loop (num != 0) {
+        num := num / 10
+        count := count + 1
+    }
+    | count
+}
+
