@@ -1,0 +1,5 @@
+caso___native_java_start
+
+System.out.println('Hello world!');
+
+caso___native_java_stop

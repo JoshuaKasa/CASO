@@ -204,6 +204,9 @@ class CASOParser:
             # TODO: Implement else parsing (DONE)
         elif current_token.type == 'LOOP':
             self.parse_loop()
+        # This is a very important part of the parser, as it will allow us to include Java code in our CASO code
+        elif current_token.type == 'NATIVE_JAVA_START':
+            self.parse_java_source() 
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -750,3 +753,18 @@ class CASOParser:
 
         # Adding the loop statement to the AST
         self.nodes.append(loop_node)
+
+    def parse_java_source(self):
+        # We don't need to parse each line, as the parser is built for CASO and we're well... parsing Java, we just gotta append each line to the node
+        self.current_position += 1 # Skip the JAVA_SOURCE token
+        java_source = '' # We'll append each line to this string
+
+        while self.tokens[self.current_position].type != 'JAVA_SOURCE_END':
+            # We can't directly append the token to the AST, as it isn't a actual part of the CASO language, but rather part of a node
+            java_source += self.tokens[self.current_position].value + '\n'
+            self.current_position += 1 # Skip the token
+        self.current_position += 1 # Skip the JAVA_SOURCE_END token
+
+        # Adding the java source to the AST
+        java_source_node = JAVASOURCEnode(java_source)
+        self.nodes.append(java_source_node)
