@@ -3,22 +3,19 @@
         import java.util.Scanner;
         import java.util.ArrayList;
 
-        public class test_6 {
+        public class test_8 {
         
             public static void main(String[] args) {
 
         
-        int a = 0;
+        System.out.println('Hello world!');
+aaa
         
-        for (int i = 0; i <= 10; i++) {
+        int a = 10;
+int b = a - 10;
         
-        for (int j = i; j <= i + 1; j++) {
-        
-        a = a + j - i;
-        
-        }
-        
-        }
+        int a = 10;
+int b = a - 10;
         
             }
         }
