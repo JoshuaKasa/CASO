@@ -205,7 +205,7 @@ class CASOParser:
         elif current_token.type == 'LOOP':
             self.parse_loop()
         # This is a very important part of the parser, as it will allow us to include Java code in our CASO code
-        elif current_token.type == 'NATIVE_JAVA_START':
+        elif current_token.type == 'GENERAL_JAVA_TOKEN':
             self.parse_java_source() 
         else:
             if current_token.type == "NEWLINE":
@@ -213,31 +213,81 @@ class CASOParser:
             else:
                 raise CASOSyntaxError(f"Unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
 
+    def expect_token(self, expected_type):
+        """Checks if the current token matches the expected type. Raises an error if not."""
+        current_token = self.tokens[self.current_position]
+
+        error_message = f"Expected token of type {expected_type}, but got {current_token.type}"
+        if current_token.type != expected_type:
+            raise CASOSyntaxError(error_message, current_token.line_num, current_token.char_pos)
+        return current_token
+
+    def advance_token(self):
+        '''This method will advance the current token position by one and return the new current token'''
+        self.current_position += 1
+        return self.tokens[self.current_position]
+
+    def current_token(self):
+        '''This method will return the current token'''
+        return self.tokens[self.current_position]
+
+    def current_token_type(self):
+        '''This method will return the current token type'''
+        return self.current_token().type
+
+    def current_token_value(self):
+        '''This method will return the current token value'''
+        return self.current_token().value
+
+    def register_variable(self, variable_name, variable_type):
+        '''This method will register a variable in the variables dictionary'''
+        if variable_name in self.variables:
+            raise CASOSyntaxError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
+        self.variables[variable_name] = variable_type
+
+    def is_registered_variable(self, variable_name):
+        '''This method will check if a variable is already registered'''
+        return variable_name in self.variables
+
+    def is_not_registered_variable_exception(self, variable_name):
+        '''This method will check if a variable is not registered and raise an exception if it is'''
+        if not self.is_registered_variable(variable_name):
+            raise CASOSyntaxError(f"Variable {variable_name} not declared", self.current_token().line_num, self.current_token().char_pos)
+
+    def is_registered_variable_exception(self, variable_name):
+        '''This method will check if a variable is already registered and raise an exception if it is'''
+        if self.is_registered_variable(variable_name):
+            raise CASOSyntaxError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
+
+    def is_valid_type(self, variable_type):
+        '''This method will check if a variable type is valid'''
+        return variable_type in self.TYPES
+
+    def is_valid_type_exception(self, variable_type):
+        '''This method will check if a variable type is valid and raise an exception if it is not'''
+        if not self.is_valid_type(variable_type):
+            raise CASOSyntaxError(f"Invalid variable type {variable_type}", self.current_token().line_num, self.current_token().char_pos)
+        return True
+
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
-        self.current_position += 1 # Skip the LET token
+        self.advance_token() # Skip the LET token
         
         # The next token should be the variable name
-        variable_name_token = self.tokens[self.current_position]
-        if variable_name_token.type != "ID":
-            raise CASOSyntaxError(f"Expected variable name, got {variable_name_token.type}", variable_name_token.line_num, variable_name_token.char_pos)
+        variable_name_token = self.expect_token("ID")
         variable_name = variable_name_token.value # Save the variable name
+
         # Check if the variable name is already in the dictionary of variables
-        if variable_name in self.variables:
-            raise CASOSyntaxError(f"Variable {variable_name} already declared", variable_name_token.line_num, variable_name_token.char_pos)
-        self.variables[variable_name] = None # Add the variable name to the dictionary of variables
+        self.is_registered_variable_exception(variable_name)
 
         # Now should come the type assignment operator
-        self.current_position += 1 # Skip the variable name token
-        type_assignment_token = self.tokens[self.current_position]
-        if type_assignment_token.type != "TYPE_ASSIGN":
-            raise CASOSyntaxError(f"Expected type assignment operator, got {type_assignment_token.type}", type_assignment_token.line_num, type_assignment_token.char_pos)
+        self.advance_token() # Skip the variable name token
+        self.expect_token("TYPE_ASSIGN")
 
         # Now should come the variable type
-        self.current_position += 1 # Skip the type assignment token
+        self.advance_token() # Skip the type assignment token
         variable_type_token = self.tokens[self.current_position]
-        if variable_type_token.type not in self.TYPES:
-            raise CASOSyntaxError(f"Expected variable type, got {variable_type_token.type}", variable_type_token.line_num, variable_type_token.char_pos)
+        self.is_valid_type(variable_type_token.value) # Check if the variable type is valid
         
         # Check if the variable type is a list
         is_list = False
@@ -249,9 +299,7 @@ class CASOParser:
             self.current_position += 1 # Skip the variable type token
 
         # Now should come the assignment operator
-        assignment_token = self.tokens[self.current_position]
-        if assignment_token.type != "ASSIGN":
-            raise CASOSyntaxError(f"Expected assignment operator, got {assignment_token.type}", assignment_token.line_num, assignment_token.char_pos)
+        self.expect_token("ASSIGN")
 
         # Now should come the variable value, which can be either an expression or a list
         self.current_position += 1 # Skip the assignment token
@@ -260,6 +308,9 @@ class CASOParser:
         else:
             variable_value = self.parse_expression()
 
+        # We can now add the variable to the dictionary of variables
+        self.register_variable(variable_name, variable_type)
+
         # After all the above, we can add the declaration node to the list of nodes
         append_node = DECLARATIONnode(variable_name, variable_type, variable_value)
         self.nodes.append(append_node)
@@ -267,23 +318,18 @@ class CASOParser:
     # This function will be used to parse the assignment statement
     def parse_assignment(self):
         # The first token should be the variable name
-        variable_name_token = self.tokens[self.current_position]
-        if variable_name_token.type != "ID":
-            raise CASOSyntaxError(f"Expected variable name, got {variable_name_token.type}", variable_name_token.line_num, variable_name_token.char_pos)
+        variable_name_token = self.current_token() # Save the variable name token
         variable_name = variable_name_token.value
 
         # Check if the variable name is in the dictionary of variables
-        if variable_name not in self.variables:
-            raise CASOSyntaxError(f"Variable {variable_name} not declared", variable_name_token.line_num, variable_name_token.char_pos)
+        self.is_not_registered_variable_exception(variable_name)
 
         # Now should come the assignment operator
-        self.current_position += 1
-        assignment_token = self.tokens[self.current_position]
-        if assignment_token.type != "REASSIGN":
-            raise CASOSyntaxError(f"Expected assignment operator, got {assignment_token.type}", assignment_token.line_num, assignment_token.char_pos)
+        self.advance_token() # Skip the variable name token
+        assignment_token = self.expect_token("REASSIGN")
 
         # Now should come the variable value, which is an expression
-        self.current_position += 1 # Skip the assignment token
+        self.advance_token() # Skip the assignment token
         variable_value = self.parse_expression()
         if variable_value == '':
             raise CASOSyntaxError(f"Expected expression, got {variable_value}", assignment_token.line_num, assignment_token.char_pos)
@@ -756,14 +802,8 @@ class CASOParser:
 
     def parse_java_source(self):
         # We don't need to parse each line, as the parser is built for CASO and we're well... parsing Java, we just gotta append each line to the node
+        java_source = self.tokens[self.current_position].value
         self.current_position += 1 # Skip the JAVA_SOURCE token
-        java_source = '' # We'll append each line to this string
-
-        while self.tokens[self.current_position].type != 'JAVA_SOURCE_END':
-            # We can't directly append the token to the AST, as it isn't a actual part of the CASO language, but rather part of a node
-            java_source += self.tokens[self.current_position].value + '\n'
-            self.current_position += 1 # Skip the token
-        self.current_position += 1 # Skip the JAVA_SOURCE_END token
 
         # Adding the java source to the AST
         java_source_node = JAVASOURCEnode(java_source)

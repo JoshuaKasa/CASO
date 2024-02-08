@@ -90,6 +90,8 @@ class CASOTranspiler:
                 self.transpile_else(node)
             elif node.node_type == NodeType.LOOP:
                 self.transpile_loop(node)
+            elif node.node_type == NodeType.JAVA_SOURCE:
+                self.transpile_native_java(node)
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -223,4 +225,9 @@ class CASOTranspiler:
                 self.transpile_node(statement)
         self.transpiled_code += '''
         }
+        '''
+
+    def transpile_native_java(self, node):
+        self.transpiled_code += f'''
+        {node.java_code}
         '''

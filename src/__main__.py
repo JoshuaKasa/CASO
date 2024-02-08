@@ -4,6 +4,7 @@ import caso_transpiler
 
 import sys
 import os
+import time
 
 def main(input_path: str) -> None:
     """
@@ -24,6 +25,9 @@ def main(input_path: str) -> None:
         # Reading the source code from the test file
         with open(input_file_path, 'r') as file:
             source_code = file.read()
+
+        # Starting milliseconds
+        start_time = int(round(time.time() * 1000))
 
         # ---------------------- LEXER ----------------------
         # Tokenization of the source code
@@ -49,6 +53,10 @@ def main(input_path: str) -> None:
         transpiler = CASOTranspiler(nodes, file_path=output_file_path)
         source = transpiler.transpile()
         print("Transpiled Source Code:\n", source)
+
+        # Ending milliseconds
+        end_time = int(round(time.time() * 1000))
+        print(f"\nExecution time: {end_time - start_time}ms")
 
     except Exception as e:
         print(f"An error occurred: {e}")
