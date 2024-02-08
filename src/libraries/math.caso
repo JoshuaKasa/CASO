@@ -9,31 +9,31 @@ fnc power(base: Int, exponent: Int): Int {
 fnc sqrt(x: Int): Float {
     caso___native_java_start
     return (float)Math.sqrt(x);
-    caso___native_java_stop
+    caso___native_java_end
 }
 
 fnc log(x: Float): Float {
     caso___native_java_start
     return (float)Math.log(x);
-    caso___native_java_stop
+    caso___native_java_end
 }
 
 fnc sin(angle: Float): Float {
     caso___native_java_start
     return (float)Math.sin(angle);
-    caso___native_java_stop
+    caso___native_java_end
 }
 
 fnc cos(angle: Float): Float {
     caso___native_java_start
     return (float)Math.cos(angle);
-    caso___native_java_stop
+    caso___native_java_end
 }
 
 fnc tan(angle: Float): Float {
     caso___native_java_start
     return (float)Math.tan(angle);
-    caso___native_java_stop
+    caso___native_java_end
 }
 
 fnc factorial(n: Int): Int {
