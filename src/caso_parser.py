@@ -20,7 +20,7 @@
 # TODO: Converting variable types into Java types directly from the parser.
 
 from enum import Enum
-from caso_exception import CASOSyntaxError, CASOWarning
+from caso_exception import CASOSyntaxError, CASOAttributeError, CASOTypeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning  
 
 class NodeType(Enum):
     VARIABLE_DECLARATION = 1
@@ -171,7 +171,7 @@ class CASOParser:
     COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND'] + ARITHMETIC_OPERATORS
 
     # Scoping variables
-    current_scope = 'global' # This will be the current scope
+    variables_stack = [] # This will be the stack of variables (for scoping)
     current_node = None # This will be the current node
 
     def parse(self):
@@ -211,7 +211,7 @@ class CASOParser:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
             else:
-                raise CASOSyntaxError(f"Unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
+                raise CASOIllegalTokenError(f"Unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
 
     def expect_token(self, expected_type):
         """Checks if the current token matches the expected type. Raises an error if not."""
@@ -268,6 +268,20 @@ class CASOParser:
         if not self.is_valid_type(variable_type):
             raise CASOSyntaxError(f"Invalid variable type {variable_type}", self.current_token().line_num, self.current_token().char_pos)
         return True
+
+    def is_registered_function(self, function_name):
+        '''This method will check if a function is already registered'''
+        return function_name in self.functions
+
+    def is_not_registered_function_exception(self, function_name):
+        '''This method will check if a function is not registered and raise an exception if it is'''
+        if not self.is_registered_function(function_name):
+            raise CASOSyntaxError(f"Function {function_name} not declared", self.current_token().line_num, self.current_token().char_pos)
+
+    def is_registered_function_exception(self, function_name):
+        '''This method will check if a function is already registered and raise an exception if it is'''
+        if self.is_registered_function(function_name):
+            raise CASOSyntaxError(f"Function {function_name} already declared", self.current_token().line_num, self.current_token().char_pos)
 
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
@@ -343,11 +357,11 @@ class CASOParser:
         expression_tokens = []
 
         # Checking if the expression is a list
-        if self.tokens[self.current_position].type == 'OPEN_BRACKET':
+        if self.current_token_type() == "LIST":
             self.parse_list_expression()
 
         # Collect all the tokens until the end of the line
-        while self.current_position < len(self.tokens) and self.tokens[self.current_position].type != 'NEWLINE':
+        while self.current_position < len(self.tokens) and self.current_token_type() != "NEWLINE":
             if self.tokens[self.current_position].type in self.COMPARISON_OPERATORS:
                 expression_tokens.append(self.tokens[self.current_position])
             elif self.tokens[self.current_position].type == 'ID':
@@ -414,42 +428,37 @@ class CASOParser:
 
         # Parsing the list
         list_values = []
-        while self.tokens[self.current_position].type != 'CLOSE_BRACKET':
-            list_values.append(self.tokens[self.current_position].value)
-            self.current_position += 1
+        while self.current_token_type() != 'CLOSE_BRACKET':
+            list_values.append(self.current_token_value())
+            self.advance_token()
 
             # Checking for correct syntax
-            if self.tokens[self.current_position].type == 'COMMA':
-                self.current_position += 1 # Skip the comma token
+            if self.current_token_type() == 'COMMA':
+                self.advance_token() # Skip the comma token
 
         # Checking for correct syntax
-        if self.tokens[self.current_position].type != 'CLOSE_BRACKET':
-            raise CASOSyntaxError(f"Expected close bracket, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.expect_token('CLOSE_BRACKET')
 
         # Finally finish parsing the list
-        self.current_position += 1 # Skip the close bracket token
+        self.advance_token() # Skip the close bracket token
         return list_values
 
     # This is the method that will parse lists
     def parse_list(self):
         # Checking for correct syntax
-        self.current_position += 1 # Skip the LIST token
-        open_bracket_token = self.tokens[self.current_position]
-        if open_bracket_token.type != "OPEN_BRACKET":
-            raise CASOSyntaxError(f"Expected open bracket, got {open_bracket_token.type}", open_bracket_token.line_num, open_bracket_token.char_pos)
+        self.advance_token() # Skip the list token
+        self.expect_token('OPEN_BRACKET')
         list_content_type = 'List['
 
         # Recursively parse the list
-        self.current_position += 1 # Skip the open bracket token
+        self.advance_token() # Skip the open bracket token
         list_content_type += str(self.parse_list_content())
 
         # Checking for correct syntax
-        close_bracket_token = self.tokens[self.current_position]
-        if close_bracket_token.type != "CLOSE_BRACKET":
-            raise CASOSyntaxError(f"Expected close bracket, got {close_bracket_token.type}", close_bracket_token.line_num, close_bracket_token.char_pos)
+        self.expect_token('CLOSE_BRACKET')
 
         # Finally finish parsing the list
-        self.current_position += 1 # Skip the close bracket token
+        self.advance_token() # Skip the close bracket token
         return list_content_type + ']'
 
     def parse_list_content(self):
@@ -507,44 +516,41 @@ class CASOParser:
                                       self.tokens[self.current_position].line_num, 
                                       self.tokens[self.current_position].char_pos)
 
-        self.current_position += 1  # Skip the close brace token
+        self.advance_token()  # Skip the closing brace token
         append_node = WHENnode(variable_name, match_cases)
         self.nodes.append(append_node)
 
     def parse_pattern(self):
         # Skip any newlines or unexpected tokens at the beginning
         while self.tokens[self.current_position].type in ['NEWLINE']:
-            self.current_position += 1
+            self.advance_token()
 
         # Now we are at the beginning of the pattern
         if self.tokens[self.current_position].type not in self.COMPARISON_OPERATORS:
             raise CASOSyntaxError(f"Expected pattern operator, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-        match_type = self.tokens[self.current_position].type # Saving the match type
+        match_type = self.current_token_type()
 
         # If the match type is UKN, then we don't need to check for value syntax
         match_value = None
         if match_type != 'UKN':
             # Checking for value syntax, here can go: variables, numbers, list values, false, true, unknown, but can't go: expressions or lists 
-            self.current_position += 1 # Skip the comparison operator token
+            self.advance_token() # Skip the match type token
             if self.tokens[self.current_position].type == 'ID':
                 # Checking if the variable is declared
-                if self.tokens[self.current_position].value not in self.variables:
-                    raise CASOSyntaxError(f"Variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            match_value = self.tokens[self.current_position].value # Saving the match value
+                self.is_registered_variable(self.current_token_value())
+            match_value = self.current_token_value()
 
         # Checking for arrow syntax
-        self.current_position += 1  # Skip the value token
-        if self.tokens[self.current_position].type != 'ARROW':
-            raise CASOSyntaxError(f"Expected arrow, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the arrow token
+        self.expect_token('ARROW') # Checking for correct syntax
 
-        self.current_position += 1  # Skip the arrow token
+        self.advance_token() # Skip the arrow token
         match_case_node = MATCHCASEnode(match_type, match_value)
 
         # Ensure we have an opening brace for the case body
-        if self.tokens[self.current_position].type != 'OPEN_BRACE':
-            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.expect_token('OPEN_BRACE')
 
-        self.current_position += 1  # Skip the open brace token
+        self.advance_token() # Skip the open brace token
         match_case_body = self.parse_action()
         match_case_node.children = match_case_body
 
@@ -555,45 +561,43 @@ class CASOParser:
         # NOTE: THIS WILL BE USED FOR HANDLING EVERYTHING UNTIL THE END OF THE BODY OF SOMETHING (WHEN, FUNCTIONS, ETC)
         # Skip any newlines or unexpected tokens at the beginning 
         # NOTE: ASSUME WE ALREADY SKIPPED THE OPEN BRACE TOKEN
-        while self.tokens[self.current_position].type in ['NEWLINE']:
-            self.current_position += 1
+        while self.current_token_type() in ['NEWLINE']:
+            self.advance_token()
 
         # Now we are at the beginning of the body
         full_body = []
-        while self.tokens[self.current_position].type != 'CLOSE_BRACE':
+        while self.current_token_type()  != 'CLOSE_BRACE':
             self.parse_statement()
             if not self.nodes: # Check if the nodes are empty
                 continue # If they are, continue to the next token
+
             parsed_statement = self.nodes.pop() # Saving the parsed statement
             full_body.append(parsed_statement)
 
-        self.current_position += 1  # Skip the close brace token
+        self.advance_token() # Skip the close brace token
         return full_body
 
     # Method that will parse the function definition
     def parse_function_declaration(self):
         # Checking for correct syntax
-        self.current_position += 1 # Skip the FNC token
-        if self.tokens[self.current_position].type != 'ID':
-            raise CASOSyntaxError(f"Expected function name, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the FUNCTION token
+        self.expect_token('ID') # Expecting a function name token
 
         # Checking if the function name is already declared
-        function_name = self.tokens[self.current_position].value # Saving the function name
-        if function_name in self.functions:
-            raise CASOSyntaxError(f"Function {function_name} already declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        function_name = self.current_token_value() # Saving the function name
+        self.is_registered_function(function_name) # Checking if the function is already declared)
 
         # Checking for correct syntax
-        self.current_position += 1 # Skip the function name token
-        if self.tokens[self.current_position].type != 'OPEN_PAREN':
-            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the function name token
+        self.expect_token('OPEN_PAREN') # Expecting an open parenthesis token
 
         # Parsing the parameters
-        self.current_position += 1 # Skip the open parenthesis token
+        self.advance_token() # Skip the open parenthesis token
         parameters = {} # Dictionary that will hold the parameters
         while self.tokens[self.current_position].type != 'CLOSE_PAREN':
-            if self.tokens[self.current_position].type != 'ID':
-                raise CASOSyntaxError(f"Expected parameter name, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            parameter_name = self.tokens[self.current_position].value # Saving the parameter name
+            self.expect_token('ID') # Expecting a parameter name
+            parameter_name = self.current_token_value() 
+
             # Adding the parameter to the dictionary
             if parameter_name in parameters:
                 raise CASOSyntaxError(f"Parameter {parameter_name} already declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
@@ -601,38 +605,36 @@ class CASOParser:
             self.variables[parameter_name] = None
             
             # Assigning type to the parameter
-            self.current_position += 1 # Skip the parameter name token
-            if self.tokens[self.current_position].type != 'TYPE_ASSIGN':
-                raise CASOSyntaxError(f"Expected type assignment, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            self.current_position += 1 # Skip the type assignment token
+            self.advance_token() # Skip the parameter name token
+            self.expect_token('TYPE_ASSIGN')
+
+            self.advance_token() # Skip the type assignment token
             if self.tokens[self.current_position].type not in self.TYPES: raise CASOSyntaxError(f"Expected type, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            parameter_type = self.tokens[self.current_position].type
+            parameter_type = self.current_token_type()
             parameters[parameter_name] = parameter_type
 
             # Checking for comma or close parenthesis
-            self.current_position += 1 # Skip the type token
-            if self.tokens[self.current_position].type == 'COMMA':
+            self.advance_token() # Skip the type token
+            if self.current_token_type() == 'COMMA':
                 self.current_position += 1 # Skip the comma token
-            elif self.tokens[self.current_position].type == 'CLOSE_PAREN':
+            elif self.current_token_type()  == 'CLOSE_PAREN':
                 break
             else:
                 raise CASOSyntaxError(f"Expected comma or close parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
 
         # Checking for correct syntax
-        self.current_position += 1 # Skip the close parenthesis token
-        if self.tokens[self.current_position].type != 'TYPE_ASSIGN':
-            raise CASOSyntaxError(f"Expected type assignment, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the close parenthesis token
+        self.expect_token('TYPE_ASSIGN')
 
         # Assigning type to the function
         self.current_position += 1 # Skip the type assignment token
-        if self.tokens[self.current_position].type not in self.TYPES:
+        if self.tokens[self.current_position].type not in self.TYPES: # Check if the type is valid
             raise CASOSyntaxError(f"Expected type, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
         function_type = self.tokens[self.current_position].type
         
         # Checking for the function body
-        self.current_position += 1 # Skip the type token
-        if self.tokens[self.current_position].type != 'OPEN_BRACE':
-            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the type token
+        self.expect_token('OPEN_BRACE')
 
         # Parsing the body of the function
         self.current_position += 1 # Skip the open brace token
@@ -640,9 +642,8 @@ class CASOParser:
         function_body = self.parse_action() # Parsing the body of the function
         function_definition_node.function_body = function_body # No need to skip the close brace token, it is already skipped in the parse_action method
 
-         # Checking for correct syntax
-        if self.tokens[self.current_position].type != 'NEWLINE':
-            raise CASOSyntaxError(f"Expected new line, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        # Checking for correct syntax
+        self.expect_token('NEWLINE')
 
         # Append the function definition to the functions dictionary
         self.functions[function_name] = (parameters, function_type)
@@ -656,7 +657,7 @@ class CASOParser:
 
     def parse_return(self):
         # Checking for correct syntax
-        self.current_position += 1 # Skip the PIPE token
+        self.advance_token() # Skip the RETURN token
         return_value = self.parse_until('NEWLINE') # We already skipped the new line token
 
         # Append the return statement to the AST
@@ -666,20 +667,18 @@ class CASOParser:
     # If, else, elsif
     def parse_if(self):
         # Checking for correct syntax
-        self.current_position += 1 # Skip the IF token
-        if self.tokens[self.current_position].type != 'OPEN_PAREN':
-            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the IF token
+        self.expect_token('OPEN_PAREN')
 
         # Parsing the condition
-        self.current_position += 1 # Skip the open parenthesis token
+        self.advance_token()
         condition = self.parse_until('CLOSE_PAREN') # We already skipped the close parenthesis token
 
         # Checking for correct syntax
-        if self.tokens[self.current_position].type != 'OPEN_BRACE':
-            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.expect_token('OPEN_BRACE')
 
         # Parsing the body
-        self.current_position += 1 # Skip the open brace token
+        self.advance_token()
         if_node = IFnode(condition)
         body = self.parse_action() # We already skipped the close brace token
         if_node.if_body = body
@@ -689,20 +688,18 @@ class CASOParser:
     
     def parse_elsif(self):        
         # Checking for correct syntax
-        self.current_position += 1 # Skip the ELSIF token
-        if self.tokens[self.current_position].type != 'OPEN_PAREN':
-            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token()
+        self.expect_token('OPEN_PAREN')
 
         # Parsing the condition
-        self.current_position += 1 # Skip the open parenthesis token
+        self.advance_token()
         condition = self.parse_until('CLOSE_PAREN') # We already skipped the close parenthesis token
 
         # Checking for correct syntax   
-        if self.tokens[self.current_position].type != 'OPEN_BRACE':
-            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.expect_token('OPEN_BRACE')
 
         # Parsing the body
-        self.current_position += 1 # Skip the open brace token
+        self.advance_token()
         elsif_node = ELSIFnode(condition)
         body = self.parse_action()
         elsif_node.elsif_body = body
@@ -712,9 +709,8 @@ class CASOParser:
 
     def parse_else(self):
         # Checking for correct syntax
-        self.current_position += 1 # Skip the ELSE token
-        if self.tokens[self.current_position].type != 'OPEN_BRACE':
-            raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token()
+        self.expect_token('OPEN_BRACE')
 
         # Parsing the body
         self.current_position += 1 # Skip the open brace token
@@ -727,15 +723,12 @@ class CASOParser:
 
     def parse_function_call(self):
         # Checking for correct syntax
-        function_name = self.tokens[self.current_position].value
-        self.current_position += 1 # Skip the function name token
+        function_name = self.current_token_value()
+        self.advance_token()
 
         # Checking if the function exists
-        if function_name not in self.functions:
-            raise CASOSyntaxError(f"Function {function_name} is not defined", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-
-        if self.tokens[self.current_position].type != 'OPEN_PAREN':
-            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.is_not_registered_function_exception(function_name)
+        self.expect_token('OPEN_PAREN')
 
         # Parsing the parameters (parameters can also be expressions)
         self.current_position += 1 # Skip the open parenthesis token
@@ -756,22 +749,19 @@ class CASOParser:
 
     def parse_loop(self):
         # Checking for correct syntax
-        self.current_position += 1 # Skip the LOOP token
-        if self.tokens[self.current_position].type != 'OPEN_PAREN':
-            raise CASOSyntaxError(f"Expected open parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the LOOP token
+        self.expect_token('OPEN_PAREN')
 
         # Syntax here should be (variable, expression to_keyword expression)
         # Parsing the variable
-        self.current_position += 1 # Skip the open parenthesis token
-        variable = self.tokens[self.current_position].value
+        self.advance_token() # Skip the variable token
+        variable = self.current_token_value()
         # Checking if the variable is already defined
-        if variable in self.variables:
-            raise CASOSyntaxError(f"Variable {variable} is already defined", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.is_registered_variable_exception(variable)
         self.variables[variable] = 'INTEGER'
-        self.current_position += 1 # Skip the variable token
+        self.advance_token() # Skip the variable token
 
-        if self.tokens[self.current_position].type != 'COMMA':
-            raise CASOSyntaxError(f"Expected comma, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.expect_token('COMMA')
         self.current_position += 1 # Skip the comma token
 
         # Now should come the expression to_keyword expression
@@ -786,8 +776,7 @@ class CASOParser:
             self.current_position += 1 # Skip the PIPE token
             guard_clause = self.parse_until('PIPE') # We already skipped the pipe token
 
-            if self.tokens[self.current_position].type != 'OPEN_BRACE':
-                raise CASOSyntaxError(f"Expected open brace, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+            self.expect_token('OPEN_BRACE')
             self.current_position += 1 # Skip the open brace token
         else:
             raise CASOSyntaxError(f"Expected open brace or guard clause, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
