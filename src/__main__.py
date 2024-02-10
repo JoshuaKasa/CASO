@@ -5,6 +5,7 @@ import caso_transpiler
 import sys
 import os
 import time
+import traceback  
 
 def main(input_path: str) -> None:
     """
@@ -59,7 +60,8 @@ def main(input_path: str) -> None:
         print(f"\nExecution time: {end_time - start_time}ms")
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error: {e}")
+        traceback.print_exc()
 
 # Example of calling the main function
 if __name__ == "__main__":
