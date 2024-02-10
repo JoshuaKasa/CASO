@@ -13,11 +13,11 @@
 
 # TODO: Adding new type of loop, for loops are boring. (DONE)
 # TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement. (IN PROGRESS - MOMENTARILY PAUSED)
-#
+
 # TODO: Fix local variable error:
-#   - The error consists on the fact that the parser puts all variables inside the same list and doesn't track the scope of the variables, so if you declare a variable inside a function, even if inside the Java code the variable is transpiled as local, the parser doesn't understand that and throws an error. (IN PROGRESS)
-#
-# TODO: Converting variable types into Java types directly from the parser.
+#   - The error consists on the fact that the parser puts all variables inside the same list and doesn't track the scope of the variables, so if you declare a variable inside a function, even if inside the Java code the variable is transpiled as local, the parser doesn't understand that and throws an error. (DONE)
+
+# TODO: Converting variable types into Java types directly from the parser. (IN PROGRESS)
 
 from enum import Enum
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOTypeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning  
@@ -162,19 +162,20 @@ class CASOParser:
         self.tokens = tokens
         self.current_position = 0
         self.nodes = [] # This will be the list of nodes that will be returned by the parse() method
-        self.variables = {} # This will be the dictionary of variables that will be returned by the parse() method
         self.functions = {} # This will be the dictionary of functions that will be returned by the parse() method    
+        self.scope_stack = [{}] # Keeping track of the scope of the variables
 
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN', 'EMPTY']
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
-    COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND'] + ARITHMETIC_OPERATORS
+    COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND', 'TRUE', 'FALSE'] + ARITHMETIC_OPERATORS
 
     # Scoping variables
-    variables_stack = [] # This will be the stack of variables (for scoping)
     current_node = None # This will be the current node
 
     def parse(self):
+        print(self.scope_stack)
+
         while self.current_position < len(self.tokens):
             self.nodes.append(self.parse_statement())
         return self.nodes
@@ -240,14 +241,14 @@ class CASOParser:
         return self.current_token().value
 
     def register_variable(self, variable_name, variable_type):
-        '''This method will register a variable in the variables dictionary'''
-        if variable_name in self.variables:
-            raise CASOSyntaxError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
-        self.variables[variable_name] = variable_type
+        '''This method will register a variable in the current scope'''
+        if self.lookup_variable(variable_name) is not None:
+            raise CASOSyntaxError(f"Variable {variable_name} already declared in this scope", self.current_token().line_num, self.current_token().char_pos)
+        self.add_variable_to_current_scope(variable_name, variable_type)
 
     def is_registered_variable(self, variable_name):
         '''This method will check if a variable is already registered'''
-        return variable_name in self.variables
+        return False if self.lookup_variable(variable_name) is None else True
 
     def is_not_registered_variable_exception(self, variable_name):
         '''This method will check if a variable is not registered and raise an exception if it is'''
@@ -282,6 +283,29 @@ class CASOParser:
         '''This method will check if a function is already registered and raise an exception if it is'''
         if self.is_registered_function(function_name):
             raise CASOSyntaxError(f"Function {function_name} already declared", self.current_token().line_num, self.current_token().char_pos)
+
+    def push_scope(self):
+        '''This method will push a new scope to the scope stack'''
+        self.scope_stack.append({})
+
+    def pop_scope(self):
+        '''This method will pop the current scope from the scope stack'''
+        if len(self.scope_stack) > 1:
+            self.scope_stack.pop()
+        else:
+            raise CASOSyntaxError("No scope to pop", self.current_token().line_num, self.current_token().char_pos)
+
+    def add_variable_to_current_scope(self, variable_name, variable_type):
+        print(f"Adding variable {variable_name} of type {variable_type} to scope {self.scope_stack[-1]}")
+        if variable_name in self.scope_stack[-1]:
+            raise CASONotDeclaredError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
+        self.scope_stack[-1][variable_name] = variable_type
+
+    def lookup_variable(self, variable_name):
+        for scope in reversed(self.scope_stack):
+            if variable_name in scope:
+                return scope[variable_name]
+        return None  # Variable not found
 
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
@@ -322,8 +346,8 @@ class CASOParser:
         else:
             variable_value = self.parse_expression()
 
-        # We can now add the variable to the dictionary of variables
-        self.register_variable(variable_name, variable_type)
+        # We can now add the variable to the current scope
+        self.add_variable_to_current_scope(variable_name, variable_type)
 
         # After all the above, we can add the declaration node to the list of nodes
         append_node = DECLARATIONnode(variable_name, variable_type, variable_value)
@@ -366,7 +390,8 @@ class CASOParser:
                 expression_tokens.append(self.tokens[self.current_position])
             elif self.tokens[self.current_position].type == 'ID':
                 # Checking if the variable is declared
-                if self.tokens[self.current_position].value in self.variables:
+                print(self.scope_stack)
+                if self.lookup_variable(self.current_token_value()) is not None:
                     expression_tokens.append(self.tokens[self.current_position])
                 else:
                     raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
@@ -404,7 +429,7 @@ class CASOParser:
                 expression_tokens.append(token)
             elif token.type == 'ID':
                 # User is trying to call a variable (never in my life will I implement recursion)
-                if token.value in self.variables:
+                if self.is_registered_variable(token.value) is not None:
                     expression_tokens.append(token)
                 else:
                     raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
@@ -479,8 +504,7 @@ class CASOParser:
 
         # Checking if the variable name is in the dictionary of variables
         variable_name = self.tokens[self.current_position].value
-        if variable_name not in self.variables:
-            raise CASOSyntaxError(f"Variable {variable_name} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.is_not_registered_variable_exception(variable_name)
         
         # Correct syntax check
         self.current_position += 1 # Skip the variable name token
@@ -579,6 +603,9 @@ class CASOParser:
 
     # Method that will parse the function definition
     def parse_function_declaration(self):
+        # Entering a new scope
+        self.push_scope()
+
         # Checking for correct syntax
         self.advance_token() # Skip the FUNCTION token
         self.expect_token('ID') # Expecting a function name token
@@ -601,8 +628,8 @@ class CASOParser:
             # Adding the parameter to the dictionary
             if parameter_name in parameters:
                 raise CASOSyntaxError(f"Parameter {parameter_name} already declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            # Adding the parameter to the variables (so that it can be used inside the function)
-            self.variables[parameter_name] = None
+            # Adding the parameter to the current scope
+            self.add_variable_to_current_scope(parameter_name, 'UKN')
             
             # Assigning type to the parameter
             self.advance_token() # Skip the parameter name token
@@ -642,6 +669,9 @@ class CASOParser:
         function_body = self.parse_action() # Parsing the body of the function
         function_definition_node.function_body = function_body # No need to skip the close brace token, it is already skipped in the parse_action method
 
+        # Exiting the scope
+        self.pop_scope()
+
         # Checking for correct syntax
         self.expect_token('NEWLINE')
 
@@ -650,10 +680,6 @@ class CASOParser:
 
         # Append the function definition to the AST
         self.nodes.append(function_definition_node)
-
-        # Removing all the parameters from the variables dictionary
-        for parameter in parameters:
-            self.variables.pop(parameter)
 
     def parse_return(self):
         # Checking for correct syntax
@@ -686,7 +712,10 @@ class CASOParser:
         # Adding the if statement to the AST
         self.nodes.append(if_node)
     
-    def parse_elsif(self):        
+    def parse_elsif(self):       
+        # Entering a new scope
+        self.push_scope()
+
         # Checking for correct syntax
         self.advance_token()
         self.expect_token('OPEN_PAREN')
@@ -704,10 +733,16 @@ class CASOParser:
         body = self.parse_action()
         elsif_node.elsif_body = body
 
+        # Exiting the scope
+        self.pop_scope()
+
         # Adding the elsif statement to the AST
         self.nodes.append(elsif_node)
 
     def parse_else(self):
+        # Entering a new scope
+        self.push_scope()
+
         # Checking for correct syntax
         self.advance_token()
         self.expect_token('OPEN_BRACE')
@@ -717,6 +752,9 @@ class CASOParser:
         else_node = ELSEnode()
         body = self.parse_action()
         else_node.else_body = body
+
+        # Exiting the scope
+        self.pop_scope()
 
         # Adding the else statement to the AST
         self.nodes.append(else_node)
@@ -748,6 +786,9 @@ class CASOParser:
         self.nodes.append(function_call_node)   
 
     def parse_loop(self):
+        # Entering a new scope
+        self.push_scope()
+
         # Checking for correct syntax
         self.advance_token() # Skip the LOOP token
         self.expect_token('OPEN_PAREN')
@@ -758,7 +799,7 @@ class CASOParser:
         variable = self.current_token_value()
         # Checking if the variable is already defined
         self.is_registered_variable_exception(variable)
-        self.variables[variable] = 'INTEGER'
+        self.add_variable_to_current_scope(variable, 'INT')
         self.advance_token() # Skip the variable token
 
         self.expect_token('COMMA')
@@ -770,21 +811,25 @@ class CASOParser:
 
         # Checking for correct syntax
         # Here could come 2 things, 1 is a brace, the other is a guard clause
-        if self.tokens[self.current_position].type == 'OPEN_BRACE':
-            self.current_position += 1 # Skip the open brace token
-        elif self.tokens[self.current_position].type == 'PIPE':
-            self.current_position += 1 # Skip the PIPE token
+        guard_clause = None
+        if self.current_token_type() == 'OPEN_BRACE':
+            self.advance_token() # Skip the open brace token
+        elif self.current_token_type() == 'PIPE':
+            self.advance_token() # Skip the pipe token
             guard_clause = self.parse_until('PIPE') # We already skipped the pipe token
 
             self.expect_token('OPEN_BRACE')
-            self.current_position += 1 # Skip the open brace token
+            self.advance_token() # Skip the open brace token
         else:
             raise CASOSyntaxError(f"Expected open brace or guard clause, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
 
         # Parsing the body
-        loop_node = LOOPnode(variable, expression1, expression2)
+        loop_node = LOOPnode(variable, expression1, expression2, guard_clause)
         body = self.parse_action()
         loop_node.loop_body = body
+
+        # Exiting the scope
+        self.pop_scope()
 
         # Adding the loop statement to the AST
         self.nodes.append(loop_node)
