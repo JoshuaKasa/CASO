@@ -34,6 +34,12 @@ class CASOLexer:
         ('ELSIF', r'\belsif\b'), # Else if keyword, used for else if statements
         ('LOOP', r'\bloop\b'), # Loop keyword, used for loops
         ('TO', r'\bto\b'), # To keyword, used for loops
+        ('USE', r'\buse\b'), # Use keyword, used for importing modules
+        ('OBJECT', r'\bobject\b'), # Object keyword, used for object declaration (classses in Java)
+
+        # Boolean values
+        ('TRUE', r'\btrue\b'), # True keyword
+        ('FALSE', r'\bfalse\b'), # False keyword
 
         # LERSILER (Lexer, Parser, Transpiler) delimiters, these will be - likely - not used by the user but rather at the parser, transpiler and lexer level
         ('NATIVE_JAVA_START', r'\bcaso___native_java_start\b'), # Native Java start keyword
