@@ -1,6 +1,8 @@
 import re
+
 from caso_parser import NodeType
 from caso_exception import CASOTranspilerError
+from caso_types import conversion_table
 
 class CASOTranspiler:
     def __init__(self, ast, file_path='caso_transpiled.java', create_file=True): 
@@ -33,7 +35,7 @@ class CASOTranspiler:
         import java.util.Scanner;
         import java.util.ArrayList;
 
-        public class {self.file_name} {{
+        public class {self.file_name.split("/")[-1]} {{
         '''
 
         # Before transpiling the main method we must transpile all the function declarations

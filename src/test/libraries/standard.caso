@@ -3,14 +3,14 @@ fnc println(s: Str): Empty {
 
 	System.out.println(s);
 
-	caso___native_java_stop
+	caso___native_java_end
 }
 
-fnc read_line(prompt: Str): Str {
+fnc readln(prompt: Str): Str {
 	caso___native_java_start
 
 	System.out.print(prompt);
 	return new java.util.Scanner(System.in).nextLine();
 
-	caso___native_java_stop
+	caso___native_java_end
 }
