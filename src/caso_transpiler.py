@@ -94,6 +94,8 @@ class CASOTranspiler:
                 self.transpile_loop(node)
             elif node.node_type == NodeType.JAVA_SOURCE:
                 self.transpile_native_java(node)
+            elif node.node_type == NodeType.OBJECT:
+                self.transpile_object(node) 
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -232,4 +234,21 @@ class CASOTranspiler:
     def transpile_native_java(self, node):
         self.transpiled_code += f'''
         {node.java_code}
+        '''
+
+    def transpile_object(self, node):
+        self.transpiled_code += f'''
+        public class {node.object_name} {{
+        '''
+        for var_name, var_type in node.object_attributes.items():
+            self.transpiled_code += f'''
+            {var_type.lower()} {var_name};
+            '''
+        
+        # Transpiling the constructor methods
+        for method in node.object_methods:
+            self.transpile_function_declaration(method)
+
+        self.transpiled_code += '''
+        }
         '''

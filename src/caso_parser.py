@@ -19,8 +19,13 @@
 
 # TODO: Converting variable types into Java types directly from the parser. (IN PROGRESS)
 
+# TODO: Implement the 'use' keyword for importing modules. (DONE)
+
+# TODO: Implement the 'object' keyword for object declaration (classes in Java):
+#   - I gotta implement a OBJECTnode and then make the syntax and all.
+
 from enum import Enum
-from caso_exception import CASOSyntaxError, CASOAttributeError, CASOTypeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning  
+from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError
 
 class NodeType(Enum):
     VARIABLE_DECLARATION = 1
@@ -36,6 +41,8 @@ class NodeType(Enum):
     ELSIF = 11
     LOOP = 12
     JAVA_SOURCE = 13
+    IMPORT = 14
+    OBJECT = 15
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -157,6 +164,18 @@ class JAVASOURCEnode(ASTnode):
     def __repr__(self):
         return f"JAVASOURCEnode({repr(self.java_code)})"
 
+class OBJECTnode(ASTnode):
+    def __init__(self, object_name, object_attributes, object_methods=None, parent_class=None):
+        super().__init__(NodeType.OBJECT)
+        self.object_name = object_name
+        self.object_attributes = object_attributes
+        self.object_methods = object_methods
+        self.parent_class = parent_class
+
+
+    def __repr__(self):
+        return f"OBJECTnode({repr(self.object_name)}, {repr(self.object_attributes)}, {repr(self.object_methods)}, {repr(self.parent_class)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -208,19 +227,26 @@ class CASOParser:
         # This is a very important part of the parser, as it will allow us to include Java code in our CASO code
         elif current_token.type == 'GENERAL_JAVA_TOKEN':
             self.parse_java_source() 
+        elif current_token.type == 'OBJECT':
+            self.parse_object()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
             else:
                 raise CASOIllegalTokenError(f"Unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
 
-    def expect_token(self, expected_type):
-        """Checks if the current token matches the expected type. Raises an error if not."""
+    def expect_token(self, *expected_types):
+        """Checks if the current token matches one of the expected types. Raises an error if not."""
         current_token = self.tokens[self.current_position]
-
-        error_message = f"Expected token of type {expected_type}, but got {current_token.type}"
-        if current_token.type != expected_type:
+        
+        # Prepare the error message in advance, assuming a mismatch will occur
+        error_message = f"Expected token of type {', '.join(expected_types)}, but got {current_token.type}"
+        
+        # Check if the current token's type is among the expected types
+        if current_token.type not in expected_types:
             raise CASOSyntaxError(error_message, current_token.line_num, current_token.char_pos)
+        
+        # If the check passes, return the current token
         return current_token
 
     def advance_token(self):
@@ -306,6 +332,14 @@ class CASOParser:
             if variable_name in scope:
                 return scope[variable_name]
         return None  # Variable not found
+
+    def current_line_num(self):
+        '''This method will return the current line number'''
+        return self.current_token().line_num
+
+    def current_char_pos(self):
+        '''This method will return the current character position'''
+        return self.current_token().char_pos
 
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
@@ -769,14 +803,13 @@ class CASOParser:
         self.expect_token('OPEN_PAREN')
 
         # Parsing the parameters (parameters can also be expressions)
-        self.current_position += 1 # Skip the open parenthesis token
+        self.advance_token() # Skip the open parenthesis token
         parameters = []
         while True: # Since we already skip the close parenthesis token, we don't need to check for it
             parameter = self.parse_until('COMMA', 'CLOSE_PAREN') # The method already skips the comma or close parenthesis token
             parameters.append(parameter)
             if parameter == '':
                 break
-        # So I don't know how to fix a bug (checking for the close parenthesis token) in the parse_until method, so imma just give it a temporary solution
         if parameters[-1] == '':
             parameters.pop(-1)
 
@@ -842,3 +875,88 @@ class CASOParser:
         # Adding the java source to the AST
         java_source_node = JAVASOURCEnode(java_source)
         self.nodes.append(java_source_node)
+
+    # Function for making parameter parsing easier
+    def parse_parameters_declaration_until(self, *end_tokens):
+        # ASSUMING WE ALREADY SKIPPED THE OPEN PARENTHESIS TOKEN
+        parameters = {}
+        while self.current_token_type() not in end_tokens:
+            self.expect_token('ID') # Expecting a parameter name
+            parameter_name = self.current_token_value()
+
+            # Getting parameter type
+            self.advance_token() # Skip the parameter name token
+            self.expect_token('TYPE_ASSIGN') # Expecting a type assignment token
+            self.advance_token() # Skip the type assignment token
+            parameter_type = self.current_token_type() # Getting the parameter type
+            if parameter_type not in self.TYPES: 
+                raise CASOInvalidTypeError(self.current_line_num(), self.current_char_pos(), self.current_token_value()) # Checking if the type is valid
+
+            # Adding the parameter to the dictionary
+            if parameter_name in parameters:
+                raise CASOSyntaxError(f"Parameter {parameter_name} already declared", self.current_line_num(), self.current_char_pos())
+            else:
+                self.is_registered_variable_exception(parameter_name) # Checking if the variable is already defined
+            parameters[parameter_name] = parameter_type # Adding the parameter to the dictionary
+            self.add_variable_to_current_scope(parameter_name, parameter_type) # Adding the parameter to the current scope
+
+            # Skipping the parameter type token
+            self.advance_token() # Skip the parameter type token
+
+            self.expect_token('COMMA', 'CLOSE_PAREN') # Expecting a comma or close parenthesis token
+
+            print(self.current_token_type())
+            if self.current_token_type() == 'COMMA':
+                self.advance_token()
+            elif self.current_token_type() == 'CLOSE_PAREN':
+                break
+            else:
+                raise CASOSyntaxError(f"Expected comma or close parenthesis, got {self.current_token_type()}", self.current_line_num(), self.current_char_pos())
+
+        # Skipping the close parenthesis token and returning
+        self.advance_token()
+        return parameters
+
+    # Parser function for a class definition
+    def parse_object(self):
+        # Entering a new scope
+        self.push_scope()
+
+        self.advance_token() # Skip the OBJECT token
+        object_name = self.expect_token('ID').value # The object name should be an identifier
+        self.advance_token() # Skip the object name token
+
+        # We can know parse the parameters
+        self.expect_token('OPEN_PAREN')
+        self.advance_token() # Skip the open parenthesis token
+        
+        # The function we're about to use, assumes the open parenthesis token has already been skipped
+        parameters = self.parse_parameters_declaration_until('CLOSE_PAREN') # This also adds them to the current scope abd skips the close parenthesis token
+
+        # Object methods (this could also be empty)
+        self.expect_token('OPEN_BRACE')
+        self.advance_token() # Skip the open brace token
+
+        # Parsing the methods
+        methods = []
+        while self.current_token_type() != 'CLOSE_BRACE':
+            # Checking for newline
+            if self.current_token_type() == 'NEWLINE':
+                self.advance_token()
+                continue
+
+            if self.current_token_type() == 'FUNCTION':
+                self.parse_function_declaration()
+                self.advance_token() # Skip the new line token
+                method= self.nodes.pop()
+                methods.append(method)
+            else:
+                raise CASOInvalidClassMemberError(self.current_line_num(), self.current_char_pos(), self.current_token_type())
+
+        # Exiting the scope
+        self.pop_scope()
+        self.advance_token() # Skip the close brace token
+
+        # Adding the object to the AST
+        object_node = OBJECTnode(object_name, parameters, methods)
+        self.nodes.append(object_node)

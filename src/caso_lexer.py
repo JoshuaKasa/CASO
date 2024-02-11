@@ -33,9 +33,9 @@ class CASOLexer:
         ('ELSE', r'\belse\b'), # Else keyword, used for else statements
         ('ELSIF', r'\belsif\b'), # Else if keyword, used for else if statements
         ('LOOP', r'\bloop\b'), # Loop keyword, used for loops
-        ('TO', r'\bto\b'), # To keyword, used for loops
+        ('TO', r'\bto\b'), # To keyword, used for loops (example: loop (i, 10 to 20))
         ('USE', r'\buse\b'), # Use keyword, used for importing modules
-        ('OBJECT', r'\bobject\b'), # Object keyword, used for object declaration (classses in Java)
+        ('OBJECT', r'\bobj\b'), # Object keyword, used for object declaration (classses in Java)
 
         # Boolean values
         ('TRUE', r'\btrue\b'), # True keyword
@@ -67,6 +67,7 @@ class CASOLexer:
         ('TYPE_ASSIGN', r':' ), # Type assignment operator
         ('ARROW', r'->'), # Arrow operator 
         ('PIPE', r'\|'), # Pipe operator (for now used for returns)
+        ('DOT', r'\.'), # Dot operator (used for object properties)
 
         # Characters
         ('OPEN_PAREN', r'\('), # Open parenthesis' 
