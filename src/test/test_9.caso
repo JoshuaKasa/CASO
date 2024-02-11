@@ -1,1 +1,6 @@
 // Classes and objects test for CASO, this is very early version of the syntax and might change later on
+obj Person(name: Str, age: Int) {
+	fnc my_informations(): Empty {
+		let a: Int = 10
+	}
+}
