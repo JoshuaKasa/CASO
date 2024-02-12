@@ -1,0 +1,5 @@
+obj Treno(numero_treno: Str, posti_prenotati: List[Str], editabile: Bool) {
+	fnc prenota_posto(nominativo_passeggero: Str) {
+		
+	}
+}
