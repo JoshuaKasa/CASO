@@ -237,18 +237,65 @@ class CASOTranspiler:
         '''
 
     def transpile_object(self, node):
+        extends_clause = f" extends {node.parent_class}" if node.parent_class else ""
         self.transpiled_code += f'''
-        public class {node.object_name} {{
-        '''
+public class {node.object_name}{extends_clause} {{
+'''
+
         for var_name, var_type in node.object_attributes.items():
             self.transpiled_code += f'''
-            {var_type.lower()} {var_name};
+            public {var_type.lower()} {var_name};
             '''
-        
-        # Transpiling the constructor methods
-        for method in node.object_methods:
-            self.transpile_function_declaration(method)
-
+        # Transpiling the object constructor
+        self.transpiled_code += f'''
+        public {node.object_name} (
+        '''
+        for i, (param_name, param_type) in enumerate(node.object_attributes.items()):
+            self.transpiled_code += f"{param_type.lower()} {param_name}"
+            if i != len(node.object_attributes) - 1:
+                self.transpiled_code += ", "
+        self.transpiled_code += ") {\n"
+        for var_name, var_type in node.object_attributes.items():
+            self.transpiled_code += f'''
+            this.{var_name} = {var_name};
+            '''
+        # Super methods (if the object has a parent class)
+        # if node.parent_class:
+        #     self.transpiled_code += f'''
+        #     super(
+        #     '''
+        #     for i, (param_name, param_type) in enumerate(node.object_attributes.items()):
+        #         self.transpiled_code += f"{param_name}"
+        #         if i != len(node.object_attributes) - 1:
+        #             self.transpiled_code += ", "
+        #     self.transpiled_code += ");\n"
         self.transpiled_code += '''
         }
+        '''
+        
+        # Getter and setters
+        for var_name, var_type in node.object_attributes.items():
+            self.transpiled_code += f'''
+            public {var_type.lower()} get_{var_name}() {{
+                return this.{var_name};
+            }}
+
+            public void set_{var_name}({var_type.lower()} {var_name}) {{
+                this.{var_name} = {var_name};
+            }}
+        '''
+
+        # Overriding the toString method
+        self.transpiled_code += f'''
+        @Override
+        public String toString() {{
+            return "{node.object_name}(" +
+        '''
+        for i, (var_name, var_type) in enumerate(node.object_attributes.items()):
+            self.transpiled_code += f'''
+            "{var_name}=" + this.{var_name} +
+            '''
+        self.transpiled_code += '''
+            ")";
+        }}
         '''
