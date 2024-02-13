@@ -165,7 +165,7 @@ class JAVASOURCEnode(ASTnode):
         return f"JAVASOURCEnode({repr(self.java_code)})"
 
 class OBJECTnode(ASTnode):
-    def __init__(self, object_name, object_attributes, object_methods=None, parent_class=None):
+    def __init__(self, object_name, object_attributes, object_methods=None, parent_class=None, parent_class_attributes=None, parent_class_methods=None):
         super().__init__(NodeType.OBJECT)
         self.object_name = object_name
         self.object_attributes = object_attributes
@@ -185,7 +185,6 @@ class CASOParser:
         self.scope_stack = [{}] # Keeping track of the scope of the variables
 
     # Useful constants
-    TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN', 'EMPTY']
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOL', 'EMPTY']
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
     COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND', 'TRUE', 'FALSE'] + ARITHMETIC_OPERATORS
@@ -230,6 +229,8 @@ class CASOParser:
             self.parse_java_source() 
         elif current_token.type == 'OBJECT':
             self.parse_object()
+        elif current_token.type == 'INIT':
+            self.parse_constructor()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -907,7 +908,8 @@ class CASOParser:
             self.add_variable_to_current_scope(parameter_name, parameter_type) # Adding the parameter to the current scope
 
             # Skipping the parameter type token
-            self.advance_token() # Skip the parameter type token
+            if parameter_type != 'LIST':
+                self.advance_token()
 
             self.expect_token('COMMA', 'CLOSE_PAREN') # Expecting a comma or close parenthesis token
 
@@ -939,19 +941,30 @@ class CASOParser:
         # The function we're about to use, assumes the open parenthesis token has already been skipped
         parameters = self.parse_parameters_declaration_until('CLOSE_PAREN') # This also adds them to the current scope abd skips the close parenthesis token
 
+        self.expect_token('OPEN_BRACE', 'INHERIT') # Expecting an open brace or inherit
+
+        # Checking if the class has a parent class
+        inherited_class = None
+        if self.current_token_type() == 'INHERIT':
+            self.advance_token() # Skip the inherit token
+
+            # Getting the inherited class
+            self.expect_token('ID') # Expecting an identifier
+            inherited_class = self.current_token_value() # The inherited class should be an identifier
+            self.advance_token()
+
         # Object methods (this could also be empty)
-        self.expect_token('OPEN_BRACE')
         self.advance_token() # Skip the open brace token
 
         # Parsing the methods
         methods = []
         while self.current_token_type() != 'CLOSE_BRACE':
             # Checking for newline
-            if self.current_token_type() == 'NEWLINE':
+            if self.current_token_type() == 'NEWLINE': # If the token is a new line
                 self.advance_token()
                 continue
 
-            if self.current_token_type() == 'FUNCTION':
+            if self.current_token_type() == 'FUNCTION': # If the token is a function declaration
                 self.parse_function_declaration()
                 self.advance_token() # Skip the new line token
                 method= self.nodes.pop()
@@ -964,7 +977,7 @@ class CASOParser:
         self.advance_token() # Skip the close brace token
 
         # Adding the object to the AST
-        object_node = OBJECTnode(object_name, parameters, methods)
+        object_node = OBJECTnode(object_name, parameters, methods, inherited_class)
         self.nodes.append(object_node)
 
     def parse_constructor(self):
