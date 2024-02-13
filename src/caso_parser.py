@@ -186,6 +186,7 @@ class CASOParser:
 
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOLEAN', 'EMPTY']
+    TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOL', 'EMPTY']
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
     COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND', 'TRUE', 'FALSE'] + ARITHMETIC_OPERATORS
 
@@ -892,6 +893,11 @@ class CASOParser:
             if parameter_type not in self.TYPES: 
                 raise CASOInvalidTypeError(self.current_line_num(), self.current_char_pos(), self.current_token_value()) # Checking if the type is valid
 
+            # If the parameter is a list, we need to parse it
+            if parameter_type == 'LIST':
+                self.advance_token() # Skip the list token
+                parameter_type = self.parse_list_expression() # Parsing the list expression
+
             # Adding the parameter to the dictionary
             if parameter_name in parameters:
                 raise CASOSyntaxError(f"Parameter {parameter_name} already declared", self.current_line_num(), self.current_char_pos())
@@ -960,3 +966,10 @@ class CASOParser:
         # Adding the object to the AST
         object_node = OBJECTnode(object_name, parameters, methods)
         self.nodes.append(object_node)
+
+    def parse_constructor(self):
+        # Entering a new scope
+        self.push_scope()
+
+        self.advance_token() # Skip the CONSTRUCTOR token
+
