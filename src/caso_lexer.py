@@ -36,6 +36,7 @@ class CASOLexer:
         ('TO', r'\bto\b'), # To keyword, used for loops (example: loop (i, 10 to 20))
         ('USE', r'\buse\b'), # Use keyword, used for importing modules
         ('OBJECT', r'\bobj\b'), # Object keyword, used for object declaration (classses in Java)
+        ('INIT', r'\binit\b'), # Init keyword, used for object initialization (constructor in Java)
 
         # Boolean values
         ('TRUE', r'\btrue\b'), # True keyword
