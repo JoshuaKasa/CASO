@@ -84,9 +84,19 @@ public class Student extends Person {
             
         public Student (
         bool promosso) {
+ 
+            super(
+            name, surname, gender, age);
 
             this.promosso = promosso;
             
+        }
+        
+        public static bool maggiorenne(
+        ) {
+
+        return age > 18;
+        
         }
         
             public bool get_promosso() {

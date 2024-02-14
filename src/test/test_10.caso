@@ -1,2 +1,6 @@
 obj Person(name: Str, surname: Str, gender: Str, age: Str) {}
-obj Student(promosso: Bool) @Person {}
+obj Student(promosso: Bool) @Person {
+	fnc maggiorenne(): Bool {
+		| age > 18
+	}
+}

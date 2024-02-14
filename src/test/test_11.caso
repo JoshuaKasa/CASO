@@ -1,0 +1,11 @@
+// School excercise in CASO
+obj Film(titolo: Str, regista: Str, genere: Str, durata: Int) {
+	// Metodi
+	fnc is_durata_sufficiente(): Bool {
+		| durata > 60
+	}
+
+	fnc aggiorna_durata(nuova_durata: Int): Empty {
+		durata := nuova_durata
+	}
+}

@@ -9,7 +9,6 @@
 
         
         System.out.println('Hello world!');
-aaa
         
         int a = 10;
 int b = a - 10;
