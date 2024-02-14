@@ -246,33 +246,44 @@ public class {node.object_name}{extends_clause} {{
             self.transpiled_code += f'''
             public {var_type.lower()} {var_name};
             '''
+
         # Transpiling the object constructor
         self.transpiled_code += f'''
         public {node.object_name} (
         '''
+
+        # Adding the object attributes
         for i, (param_name, param_type) in enumerate(node.object_attributes.items()):
             self.transpiled_code += f"{param_type.lower()} {param_name}"
             if i != len(node.object_attributes) - 1:
                 self.transpiled_code += ", "
         self.transpiled_code += ") {\n"
+
+        # Adding all the parent class attributes (we gotta do this before the constructor as Java requires it)
+        if node.parent_class:
+            self.transpiled_code += f''' 
+            super(
+            '''
+            # Getting the parent class attributes
+            for i, (attr_name, attr_type) in enumerate(node.parent_class_attributes.items()):
+                self.transpiled_code += f"{attr_name}"
+                if i != len(node.parent_class_attributes) - 1:
+                    self.transpiled_code += ", "
+            self.transpiled_code += ");\n" # End of the parent class constructor 
+
+        # Assigning the object attributes
         for var_name, var_type in node.object_attributes.items():
             self.transpiled_code += f'''
             this.{var_name} = {var_name};
             '''
-        # Super methods (if the object has a parent class)
-        # if node.parent_class:
-        #     self.transpiled_code += f'''
-        #     super(
-        #     '''
-        #     for i, (param_name, param_type) in enumerate(node.object_attributes.items()):
-        #         self.transpiled_code += f"{param_name}"
-        #         if i != len(node.object_attributes) - 1:
-        #             self.transpiled_code += ", "
-        #     self.transpiled_code += ");\n"
         self.transpiled_code += '''
         }
-        '''
+        ''' # End of the constructor
         
+        # Transpiling the object methods
+        for method in node.object_methods:
+            self.transpile_function_declaration(method)
+
         # Getter and setters
         for var_name, var_type in node.object_attributes.items():
             self.transpiled_code += f'''
