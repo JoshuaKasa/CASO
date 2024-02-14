@@ -42,6 +42,10 @@ class CASOInvalidClassMemberError(CASOException):
     def __init__(self, line_num, char_pos, current_token):
         super().__init__(f'Invalid class member: {current_token} at line {line_num}, character {char_pos}, expected a method or attribute')
 
+class CASOClassNotFoundError(CASOException):
+    def __init__(self, line_num, char_pos, current_token):
+        super().__init__(f'Class {current_token} not found at line {line_num}, character {char_pos}')
+
 class CASOWarning():
     def __init__(self, message, line_num, char_pos):
         print(f"Warning: {message} at line {line_num}, character {char_pos}")
