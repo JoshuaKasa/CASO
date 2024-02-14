@@ -53,7 +53,6 @@ def main(input_path: str) -> None:
         from caso_transpiler import CASOTranspiler
         transpiler = CASOTranspiler(nodes, file_path=output_file_path)
         source = transpiler.transpile()
-        print("Transpiled Source Code:\n", source)
 
         # Ending milliseconds
         end_time = int(round(time.time() * 1000))
