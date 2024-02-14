@@ -22,10 +22,12 @@
 # TODO: Implement the 'use' keyword for importing modules. (DONE)
 
 # TODO: Implement the 'object' keyword for object declaration (classes in Java):
-#   - I gotta implement a OBJECTnode and then make the syntax and all.
+#   - I gotta implement a OBJECTnode and then make the syntax and all. (IN PROGRESS)
+#   - I need another stack for the object attributes and methods, as they are not the same as the global variables and functions. 
+#   - Implement full inheritance. (IN PROGRESS)
 
 from enum import Enum
-from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError
+from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError
 
 class NodeType(Enum):
     VARIABLE_DECLARATION = 1
@@ -171,10 +173,11 @@ class OBJECTnode(ASTnode):
         self.object_attributes = object_attributes
         self.object_methods = object_methods
         self.parent_class = parent_class
-
+        self.parent_class_attributes = parent_class_attributes
+        self.parent_class_methods = parent_class_methods
 
     def __repr__(self):
-        return f"OBJECTnode({repr(self.object_name)}, {repr(self.object_attributes)}, {repr(self.object_methods)}, {repr(self.parent_class)})"
+        return f"OBJECTnode({repr(self.object_name)}, {repr(self.object_attributes)}, {repr(self.object_methods)}, {repr(self.parent_class)}, {repr(self.parent_class_attributes)}, {repr(self.parent_class_methods)})"
 
 class CASOParser:
     def __init__(self, tokens):
@@ -183,6 +186,7 @@ class CASOParser:
         self.nodes = [] # This will be the list of nodes that will be returned by the parse() method
         self.functions = {} # This will be the dictionary of functions that will be returned by the parse() method    
         self.scope_stack = [{}] # Keeping track of the scope of the variables
+        self.object_stack = [] # Inside here we will put the full object declaration node, with its attributes and methods
 
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOL', 'EMPTY']
@@ -193,7 +197,6 @@ class CASOParser:
     current_node = None # This will be the current node
 
     def parse(self):
-        print(self.scope_stack)
 
         while self.current_position < len(self.tokens):
             self.nodes.append(self.parse_statement())
@@ -324,7 +327,6 @@ class CASOParser:
             raise CASOSyntaxError("No scope to pop", self.current_token().line_num, self.current_token().char_pos)
 
     def add_variable_to_current_scope(self, variable_name, variable_type):
-        print(f"Adding variable {variable_name} of type {variable_type} to scope {self.scope_stack[-1]}")
         if variable_name in self.scope_stack[-1]:
             raise CASONotDeclaredError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
         self.scope_stack[-1][variable_name] = variable_type
@@ -426,7 +428,6 @@ class CASOParser:
                 expression_tokens.append(self.tokens[self.current_position])
             elif self.tokens[self.current_position].type == 'ID':
                 # Checking if the variable is declared
-                print(self.scope_stack)
                 if self.lookup_variable(self.current_token_value()) is not None:
                     expression_tokens.append(self.tokens[self.current_position])
                 else:
@@ -465,7 +466,7 @@ class CASOParser:
                 expression_tokens.append(token)
             elif token.type == 'ID':
                 # User is trying to call a variable (never in my life will I implement recursion)
-                if self.is_registered_variable(token.value) is not None:
+                if self.is_registered_variable(token.value) == True:
                     expression_tokens.append(token)
                 else:
                     raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
@@ -913,7 +914,6 @@ class CASOParser:
 
             self.expect_token('COMMA', 'CLOSE_PAREN') # Expecting a comma or close parenthesis token
 
-            print(self.current_token_type())
             if self.current_token_type() == 'COMMA':
                 self.advance_token()
             elif self.current_token_type() == 'CLOSE_PAREN':
@@ -945,13 +945,37 @@ class CASOParser:
 
         # Checking if the class has a parent class
         inherited_class = None
+        inherited_attributes = {}
+        inherited_methods = []
+
         if self.current_token_type() == 'INHERIT':
             self.advance_token() # Skip the inherit token
 
             # Getting the inherited class
             self.expect_token('ID') # Expecting an identifier
-            inherited_class = self.current_token_value() # The inherited class should be an identifier
-            self.advance_token()
+
+            inherited_class_name = self.current_token_value()
+            for object in self.object_stack: # Check if the inherited class is defined
+                if object.object_name == inherited_class_name: # The OBJECTnode has a attribute called object_name, we will check if it's equal to the inherited class
+                    inherited_class = object # We set the inherited class to the object
+                    break
+
+            if inherited_class == None: # If the class is not defined, we raise an error
+                raise CASOClassNotFoundError(self.current_line_num(), self.current_char_pos(), inherited_class_name) # If the class is not defined, we raise an error
+
+            # Inheriting all the methods and attributes from the inherited class
+            for attribute_name, attribute_type in inherited_class.object_attributes.items():
+                inherited_attributes[attribute_name] = attribute_type
+                # Adding the attribute to the current scope
+                self.add_variable_to_current_scope(attribute_name, attribute_type)
+
+            for method in inherited_class.object_methods:
+                inherited_methods.append(method)
+
+            self.advance_token() # Skip the inherited class token
+
+            # Setting the inherited class as the inherited class name
+            inherited_class = inherited_class_name
 
         # Object methods (this could also be empty)
         self.advance_token() # Skip the open brace token
@@ -961,9 +985,10 @@ class CASOParser:
         while self.current_token_type() != 'CLOSE_BRACE':
             # Checking for newline
             if self.current_token_type() == 'NEWLINE': # If the token is a new line
-                self.advance_token()
-                continue
+                self.advance_token() # Skipping until the next token is not a new line
+                continue # Skipping the rest of the loop
 
+            # Checking for function declaration
             if self.current_token_type() == 'FUNCTION': # If the token is a function declaration
                 self.parse_function_declaration()
                 self.advance_token() # Skip the new line token
@@ -977,8 +1002,11 @@ class CASOParser:
         self.advance_token() # Skip the close brace token
 
         # Adding the object to the AST
-        object_node = OBJECTnode(object_name, parameters, methods, inherited_class)
+        object_node = OBJECTnode(object_name, parameters, methods, inherited_class, inherited_attributes, inherited_methods)
         self.nodes.append(object_node)
+        self.object_stack.append(self.nodes[-1]) # Adding the object to the object stack (this is for inheritance purposes and is done by getting the last element of the nodes list)
+        # Fast pseudo-code for future me: when inheritance is implemented, check if the inherited class is in the object stack, if it is, fine, if it isn't, raise an error
+        # then get the inherited class methods and add them to the object methods
 
     def parse_constructor(self):
         # Entering a new scope
