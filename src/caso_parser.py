@@ -22,9 +22,13 @@
 # TODO: Implement the 'use' keyword for importing modules. (DONE)
 
 # TODO: Implement the 'object' keyword for object declaration (classes in Java):
-#   - I gotta implement a OBJECTnode and then make the syntax and all. (IN PROGRESS)
-#   - I need another stack for the object attributes and methods, as they are not the same as the global variables and functions. 
-#   - Implement full inheritance. (IN PROGRESS)
+#   - I gotta implement a OBJECTnode and then make the syntax and all. (DONE)
+#   - I need another stack for the object attributes and methods, as they are not the same as the global variables and functions. (DONE)
+#   - Implement full inheritance. (IN PROGRESS - ALMOST DONE)
+
+# TODO: Add libraries function and variable calls, for future me, here's a example: 
+#   - `use standard
+#   - `standard..print_line("Hello, World!")`
 
 from enum import Enum
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError
