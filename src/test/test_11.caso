@@ -1,11 +1,12 @@
 // School excercise in CASO
 obj Film(titolo: Str, regista: Str, genere: Str, durata: Int) {
-	// Metodi
+	// Metodi; in CASO, costruttori e metodi di default vengono automaticamente generati durante la creazione dell'oggetto
 	fnc is_durata_sufficiente(): Bool {
-		| durata > 60
+		| durata > 60 // Restituisce true se la durata è maggiore di 60 minuti, altrimenti false. Il return e' dato dal simbolo | (pipe operator)
 	}
 
-	fnc aggiorna_durata(nuova_durata: Int): Empty {
-		durata := nuova_durata
+	// Metodo per aggiornare la durata del film
+	fnc aggiorna_durata(nuova_durata: Int): Empty { // Il metodo non restituisce nulla (Empty, o come chiamato in Java, void)
+		durata := nuova_durata // Usiamo l'operatore di assegnamento :=
 	}
 }
