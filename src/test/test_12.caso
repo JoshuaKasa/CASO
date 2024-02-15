@@ -1,0 +1,35 @@
+// Defines a function to calculate an adjusted sum of numbers from 1 to n
+fnc adjustedSum(n: Int): Int {
+    let sum: Int = 0
+    
+    // Loop from 1 to n, inclusive
+    loop (i, 1 to n) | sum % 2 | { // Doing iteration only if sum is divisible by 2 
+        sum := sum + i
+        // Adjust sum based on current value of i using a when statement
+        when i {
+            == 5 -> { 
+                sum := sum + 10 
+            }, // Adds an extra 10 when i is 5
+            > 8 -> { 
+                sum := sum + 5 
+            },   // Adds an extra 5 for i greater than 8
+            ? -> { } // Do nothing for other cases
+        }
+    }
+
+    // Check if the final sum is within a certain range and adjust if necessary
+    if (sum > 50) {
+        sum := sum + 10
+    } 
+    elsif (sum < 20) {
+        sum := sum - 5
+    } 
+    else {
+        sum := sum + 1
+    }
+
+    | sum // Return the adjusted sum
+}
+
+// Call the function with a sample value
+adjustedSum(10)
