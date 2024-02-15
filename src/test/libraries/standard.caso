@@ -1,4 +1,4 @@
-fnc println(s: Str): Empty {
+fnc print_line(s: Str): Empty {
 	caso___native_java_start
 
 	System.out.println(s);
@@ -6,7 +6,7 @@ fnc println(s: Str): Empty {
 	caso___native_java_end
 }
 
-fnc readln(prompt: Str): Str {
+fnc read_line(prompt: Str): Str {
 	caso___native_java_start
 
 	System.out.print(prompt);
