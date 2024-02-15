@@ -1,0 +1,1 @@
+au BufRead,BufNewFile *.caso set filetype=caso
