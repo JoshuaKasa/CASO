@@ -12,7 +12,7 @@
         
         for (int i = 1; i <= n; i++) {
         
-            if (sum % 2 == 0) {
+            if (sum % 2) {
             
         sum = sum + i;
         

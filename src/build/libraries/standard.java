@@ -5,23 +5,37 @@
 
         public class standard {
         
-        public static empty println(
+            public static void main(String[] args) {
+
+        
+public class standard {
+
+        public standard (
+        ) {
+
+        }
+        
+        public static empty print_line(
         string s) {
 
         System.out.println(s);
         
         }
         
-        public static string readln(
+        public static string read_line(
         string prompt) {
 
         System.out.print(prompt);
-	return new java.util.Scanner(System.in).nextLine();
+		return new java.util.Scanner(System.in).nextLine();
         
         }
         
-            public static void main(String[] args) {
-
+        @Override
+        public String toString() {
+            return "standard(" +
+        
+            ")";
+        }}
         
             }
         }
