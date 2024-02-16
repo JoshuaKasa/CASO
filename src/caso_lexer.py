@@ -65,6 +65,7 @@ class CASOLexer:
         # Operators
         ('ASSIGN', r'='), # Assignment operator
         ('REASSIGN', r':='), # Reassignment operator
+        ('IMPORT', r'::'), # Import operator (used for importing specific modules, rather than the entire library)
         ('TYPE_ASSIGN', r':' ), # Type assignment operator
         ('ARROW', r'->'), # Arrow operator 
         ('INHERIT', r'@'), # Inheritance operator
@@ -92,6 +93,7 @@ class CASOLexer:
 
         # Other
         ("ID", r"[A-Za-z0-9_]+"),  # Identifiers (allowing alphanumeric characters and underscore)
+        ("STRING_LITERAL", r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\''), # String literals 
         ("NEWLINE", r"\n"), # Line endings
         ("SKIP", r"[ \t]+"), # Skip over spaces and tabs
     ]

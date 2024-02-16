@@ -31,7 +31,11 @@
 #   - `standard..print_line("Hello, World!")`
 
 from enum import Enum
-from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError
+
+from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError
+from caso_lexer import CASOLexer
+
+import os
 
 class NodeType(Enum):
     VARIABLE_DECLARATION = 1
@@ -47,7 +51,7 @@ class NodeType(Enum):
     ELSIF = 11
     LOOP = 12
     JAVA_SOURCE = 13
-    IMPORT = 14
+    USE = 14
     OBJECT = 15
 
 class ASTnode:
@@ -183,6 +187,15 @@ class OBJECTnode(ASTnode):
     def __repr__(self):
         return f"OBJECTnode({repr(self.object_name)}, {repr(self.object_attributes)}, {repr(self.object_methods)}, {repr(self.parent_class)}, {repr(self.parent_class_attributes)}, {repr(self.parent_class_methods)})"
 
+class USEnode(ASTnode):
+    def __init__(self, module_name, imports):
+        super().__init__(NodeType.USE)
+        self.module_name = module_name
+        self.imports = imports
+
+    def __repr__(self):
+        return f"USEnode({repr(self.module_name)}, {repr(self.imports)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -191,6 +204,7 @@ class CASOParser:
         self.functions = {} # This will be the dictionary of functions that will be returned by the parse() method    
         self.scope_stack = [{}] # Keeping track of the scope of the variables
         self.object_stack = [] # Inside here we will put the full object declaration node, with its attributes and methods
+        self.imported_modules = [] # List of imported modules
 
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOL', 'EMPTY']
@@ -201,7 +215,6 @@ class CASOParser:
     current_node = None # This will be the current node
 
     def parse(self):
-
         while self.current_position < len(self.tokens):
             self.nodes.append(self.parse_statement())
         return self.nodes
@@ -238,6 +251,8 @@ class CASOParser:
             self.parse_object()
         elif current_token.type == 'INIT':
             self.parse_constructor()
+        elif current_token.type == 'USE':
+            self.parse_use()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -348,6 +363,15 @@ class CASOParser:
     def current_char_pos(self):
         '''This method will return the current character position'''
         return self.current_token().char_pos
+
+    def library_exists(self, library_name):
+        '''This method will check if a library exists inside the /libraries directory'''
+        return os.path.exists(f"test/libraries/{library_name}.caso")
+
+    def get_library_source_code(self, library_name):
+        '''This method will return the source code of a library'''
+        with open(f"test/libraries/{library_name}.caso", "r") as file:
+            return file.read()
 
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
@@ -1018,3 +1042,40 @@ class CASOParser:
 
         self.advance_token() # Skip the CONSTRUCTOR token
 
+    # Parsing imports, this is done using the USE token
+    def parse_use(self):
+        self.advance_token() # Skip the USE token
+        self.expect_token('ID') # Expecting an identifier
+
+        # Getting the import name
+        import_name = self.current_token_value()
+        if self.library_exists(import_name) == False:
+            raise CASOImportError(self.current_line_num(), self.current_char_pos(), import_name)
+
+        # Parsing the library
+        library_source_code = self.get_library_source_code(import_name)
+
+        tokenizer = CASOLexer(library_source_code)
+        tokens = tokenizer.tokenize()
+
+        parser = CASOParser(tokens)
+        nodes = parser.parse()
+
+        print(nodes)
+
+        # Getting all the imports from the import name
+        import_list = []
+        self.advance_token() # Skip the import name token
+
+        if self.current_token_type() == 'IMPORT': # Checking if the user wants to import everything
+            self.advance_token() # Skip the import token
+            while self.current_token_type() != 'NEWLINE':
+                self.expect_token('ID') # Expecting an identifier
+                import_list.append(self.current_token_value())
+                self.advance_token() # Skip the import token
+        else:
+            self.advance_token() # Skip the import token
+
+        # Adding the import to the AST
+        use_node = USEnode(import_name, import_list)
+        self.nodes.append(use_node)
