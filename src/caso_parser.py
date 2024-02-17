@@ -462,6 +462,8 @@ class CASOParser:
                     raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             elif self.tokens[self.current_position].type == 'NUMBER':
                 expression_tokens.append(self.tokens[self.current_position])
+            elif self.tokens[self.current_position].type == 'STRING_LITERAL':
+                expression_tokens.append(self.tokens[self.current_position])
             else:
                 raise CASOSyntaxError(f"Unexpected token {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             self.current_position += 1
@@ -499,6 +501,8 @@ class CASOParser:
                 else:
                     raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             elif token.type == 'NUMBER':
+                expression_tokens.append(token)
+            elif token.type == 'STRING_LITERAL':
                 expression_tokens.append(token)
             else:
                 raise CASOSyntaxError(f"Unexpected token {token.type}", token.line_num, token.char_pos)
@@ -1061,8 +1065,6 @@ class CASOParser:
         parser = CASOParser(tokens)
         nodes = parser.parse()
 
-        print(nodes)
-
         # Getting all the imports from the import name
         import_list = []
         self.advance_token() # Skip the import name token
@@ -1075,6 +1077,14 @@ class CASOParser:
                 self.advance_token() # Skip the import token
         else:
             self.advance_token() # Skip the import token
+
+        # Adding the imported funcions/objects/variables to the current scope
+        for node in nodes:
+            # Checking if the node is a function declration and if it is in the import list
+            if node != None and node.node_type == NodeType.FUNCTION_DECLARATION: # If the token isn't a new line and is a function declaration
+                if node.function_name in import_list:
+                    if self.is_registered_function(node.function_name) == False:
+                        self.functions[node.function_name] = node.return_type
 
         # Adding the import to the AST
         use_node = USEnode(import_name, import_list)

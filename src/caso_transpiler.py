@@ -34,7 +34,18 @@ class CASOTranspiler:
         // This is the general header template for the transpiled code
         import java.util.Scanner;
         import java.util.ArrayList;
+        '''
 
+        # Transpiling the native java code
+        for node in self.ast:
+            if node == None:
+                continue
+            if node.node_type == NodeType.USE:
+                self.transpile_use(node)
+                self.ast.remove(node)
+
+        # Adding the main file
+        self.transpiled_code += f'''
         public class {self.file_name.split("/")[-1]} {{
         '''
 
@@ -310,3 +321,9 @@ public class {node.object_name}{extends_clause} {{
             ")";
         }}
         '''
+
+    def transpile_use(self, node):
+        for functions in node.imports:
+            self.transpiled_code += f'''
+            import standard/{node.module_name}.{functions};
+            '''

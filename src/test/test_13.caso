@@ -1,7 +1,7 @@
 use standard::print_line
 
 fnc main(): Empty {
-	print_line('Hello world!')
+	print_line("Hello world!")
 }
 
 main()
