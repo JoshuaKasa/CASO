@@ -26,9 +26,13 @@
 #   - I need another stack for the object attributes and methods, as they are not the same as the global variables and functions. (DONE)
 #   - Implement full inheritance. (IN PROGRESS - ALMOST DONE)
 
-# TODO: Add libraries function and variable calls, for future me, here's a example: 
+# TODO: Add libraries function and variable calls, for future me, here's a example: (IN PROGRESS)
 #   - `use standard
-#   - `standard..print_line("Hello, World!")`
+#   - `standard::print_line("Hello, World!")`
+
+# TODO: Add object calls and object methods calls, this means adding scoping for the object attributes and methods.
+# Also, I gotta add the 'self' keyword for the object methods (which would be the 'this' keyword in Java).
+# Other than that, I gotta make custom constructors and being able to instantiate objects.
 
 from enum import Enum
 
