@@ -1,0 +1,6 @@
+obj Veicolo(marca: Str, modello: Str, anno_produzione: Int, cilindrata: Int, prezzo: Int) {
+	fnc equals(v: Int): Bool {
+		let res: Bool = 0
+		| res
+	}
+}
