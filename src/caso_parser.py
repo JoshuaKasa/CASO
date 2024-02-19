@@ -12,12 +12,12 @@
 #   - Elsif are throwing some kind of error: `An error occurred: 'NoneType' object has no attribute 'type'` (DONE)
 
 # TODO: Adding new type of loop, for loops are boring. (DONE)
-# TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement. (IN PROGRESS - MOMENTARILY PAUSED)
+# TODO: Making it so that the elsif statement checks if the previous VALID node was an if statement or an elsif statement. (IN PROGRESS - MOMENTARILY PAUSED - I've tried doing it but my version doesn't work with nested structures, maybe I'll ask ChatGPT to help me idk :) )
 
 # TODO: Fix local variable error:
 #   - The error consists on the fact that the parser puts all variables inside the same list and doesn't track the scope of the variables, so if you declare a variable inside a function, even if inside the Java code the variable is transpiled as local, the parser doesn't understand that and throws an error. (DONE)
 
-# TODO: Converting variable types into Java types directly from the parser. (IN PROGRESS)
+# TODO: Converting variable types into Java types directly from the parser. (IN PROGRESS - MOMENTARILY PAUSED)
 
 # TODO: Implement the 'use' keyword for importing modules. (DONE)
 
@@ -26,17 +26,19 @@
 #   - I need another stack for the object attributes and methods, as they are not the same as the global variables and functions. (DONE)
 #   - Implement full inheritance. (IN PROGRESS - ALMOST DONE)
 
-# TODO: Add libraries function and variable calls, for future me, here's a example: (IN PROGRESS)
-#   - `use standard
+# TODO: Add libraries function and variable calls, for future me, here's a example: (IN PROGRESS - MOMENTARILY PAUSED)
+#   - `use standard`
 #   - `standard::print_line("Hello, World!")`
 
-# TODO: Add object calls and object methods calls, this means adding scoping for the object attributes and methods.
-# Also, I gotta add the 'self' keyword for the object methods (which would be the 'this' keyword in Java).
-# Other than that, I gotta make custom constructors and being able to instantiate objects.
+# TODO: Add being able to use `self` `super` and the dot operator for object attributes and methods. (IN PROGRESS)
+#   - Gotta check for errors and existing objects and shit, for now I've only made the general AST node
+#   - Future me, don't forget to add objects as types for variables (basically object declaration you stupid bastard)
+
+# TODO: Implement scoping for ALL the possible cases, this means: obejcts, functions, attributes, constructors, etc...
 
 from enum import Enum
 
-from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError
+from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError
 from caso_lexer import CASOLexer
 
 import os
@@ -57,6 +59,7 @@ class NodeType(Enum):
     JAVA_SOURCE = 13
     USE = 14
     OBJECT = 15
+    ATTRIBUTE_ACCESS = 16
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -240,8 +243,13 @@ class CASOParser:
         elif current_token.type == "ID":
             if self.tokens[self.current_position + 1].type == "REASSIGN":
                 self.parse_assignment()
-            else:
+            elif self.tokens[self.current_position + 1].type == "LPAREN":
                 self.parse_function_call()
+            elif self.tokens[self.current_position + 1].type == "DOT":
+                self.parse_object_attribute_access()
+            else:
+                raise Exception(f"Invalid token {current_token.value} at position {current_token.position}")
+
         elif current_token.type == "WHEN":
             self.parse_when()
         elif current_token.type == "FUNCTION":
