@@ -1,0 +1,25 @@
+if (1 > 0) {
+	
+}
+elsif (1 > 0) {
+	
+}
+else {
+	
+}
+
+let a: Int = 1
+if (a > 0) {
+	if (a > 0) {
+		
+	}
+	elsif (a > 0) {
+		
+	}
+	else {
+		
+	}
+}
+elsif (a > 0) {
+	
+}

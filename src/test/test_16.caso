@@ -1,0 +1,11 @@
+use standard::print_line
+
+obj Console(year: Int, model: Str, brand: Str) {
+	fnc check_equal(console: Console) {
+		if (console.year == year && console.model == model && console.brand == brand) {
+			print_line("Equal")
+		} else {
+			print_line("Not equal")
+		}
+	}
+}
