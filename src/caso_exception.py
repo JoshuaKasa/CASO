@@ -50,6 +50,13 @@ class CASOImportError(CASOException):
     def __init__(self, line_num, char_pos, current_token):
         super().__init__(f'Import {current_token} not found in libraries at line {line_num}, character {char_pos}')
 
+class CASOUnexpectedTokenError(CASOException):
+    def __init__(self, line_num, char_pos, current_token, message=None):
+        if message is None:
+            super().__init__(f'Unexpected token {current_token} at line {line_num}, character {char_pos}')
+        else:
+            super().__init__(f'{message} at line {line_num}, character {char_pos}')
+
 class CASOWarning():
     def __init__(self, message, line_num, char_pos):
         print(f"Warning: {message} at line {line_num}, character {char_pos}")
