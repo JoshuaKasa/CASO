@@ -200,6 +200,15 @@ class USEnode(ASTnode):
     def __repr__(self):
         return f"USEnode({repr(self.module_name)}, {repr(self.imports)})"
 
+class ATTRIBUTEACCESSnode(ASTnode):
+    def __init__(self, object_name, attribute_name):
+        super().__init__(NodeType.ATTRIBUTE_ACCESS)
+        self.object_name = object_name
+        self.attribute_name = attribute_name
+
+    def __repr__(self):
+        return f"ATTRIBUTEACCESSnode({repr(self.object_name)}, {repr(self.attribute_name)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
