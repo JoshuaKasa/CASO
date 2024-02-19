@@ -1105,3 +1105,16 @@ class CASOParser:
         # Adding the import to the AST
         use_node = USEnode(import_name, import_list)
         self.nodes.append(use_node)
+
+    # Parsing object attribute access
+    def parse_object_attribute_access(self):
+        object_name = self.current_token_value() # Getting the object name
+        self.advance_token() # Skip the object name token
+        self.advance_token() # Skip the DOT token
+        self.expect_token('ID') # Expecting an identifier
+        attribute_name = self.current_token_value() # Getting the attribute name
+        self.advance_token() # Skip the attribute name token
+
+        # Adding the attribute access to the AST
+        attribute_access_node = ATTRIBUTEACCESSnode(object_name, attribute_name)
+        self.nodes.append(attribute_access_node)
