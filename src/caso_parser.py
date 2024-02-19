@@ -789,6 +789,18 @@ class CASOParser:
         # Entering a new scope
         self.push_scope()
 
+        # Checking if the first VALID node before the elsif is an if or an elsif
+        # first_valid_node = None
+        # # How this works is basically: we iterate through the nodes in reverse order, and we stop when we find the first valid node (which is any node that is not None (empty or newline)), then we check if first valid node we found is  of type ELSIF or if, and if it is we set the first_valid_node variable to that, else we throw an error, for now this only works with non nested structures
+        # for node in reversed(self.nodes):
+        #     if node != None: # If the node is an if or an elsif (and it's not None (empty or newline))
+        #         if node.node_type in [NodeType.IF, NodeType.ELSIF]: # If the node is an if or an elsif
+        #             first_valid_node = node
+        #         break
+
+        # if first_valid_node is None:
+        #     raise CASOUnexpectedTokenError(self.current_line_num(), self.current_char_pos(), self.current_token_type(), 'Expected a IF or ELSIF before ELSIF')
+
         # Checking for correct syntax
         self.advance_token()
         self.expect_token('OPEN_PAREN')
