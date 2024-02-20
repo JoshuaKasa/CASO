@@ -1,7 +1,9 @@
 let a: Int = 0
+let boolean_test: Bool = true
 
 loop (i, 0 to 10) {
 	loop (j, i to i + 1) |j > 0| {
 		a := a + j - i	
 	}
+	boolean_test := a > 0
 }
