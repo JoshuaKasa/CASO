@@ -40,6 +40,7 @@ from enum import Enum
 
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError
 from caso_lexer import CASOLexer
+from caso_types import conversion_table 
 
 import os
 
@@ -73,7 +74,7 @@ class DECLARATIONnode(ASTnode):
     def __init__(self, variable_name, variable_type, expression_string):
         super().__init__(NodeType.VARIABLE_DECLARATION)
         self.variable_name = variable_name
-        self.variable_type = variable_type
+        self.variable_type = conversion_table[variable_type]
         self.variable_value = expression_string
 
     def __repr__(self):
@@ -112,7 +113,7 @@ class FUNCTIONDECLARATIONnode(ASTnode):
         super().__init__(NodeType.FUNCTION_DECLARATION)
         self.function_name = function_name
         self.function_args = function_args
-        self.return_type = return_type
+        self.return_type = conversion_table[return_type]
         self.function_body = [] # Body of the function
 
     def __repr__(self):
