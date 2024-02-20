@@ -112,7 +112,7 @@ class CASOTranspiler:
 
     def transpile_declaration(self, node):
         self.transpiled_code += f'''
-        {node.variable_type.lower()} {node.variable_name} = {node.variable_value};
+        {node.variable_type} {node.variable_name} = {node.variable_value};
         '''
 
     def transpile_assignment(self, node):
@@ -160,11 +160,11 @@ class CASOTranspiler:
 
     def transpile_function_declaration(self, node):
         self.transpiled_code += f'''
-        public static {node.return_type.lower()} {node.function_name}(
+        public static {node.return_type} {node.function_name}(
         '''
         # Iterating over the dictionary of parameters
         for i, (param_name, param_type) in enumerate(node.function_args.items()):
-            self.transpiled_code += f"{param_type.lower()} {param_name}"
+            self.transpiled_code += f"{param_type} {param_name}"
             if i != len(node.function_args) - 1:
                 self.transpiled_code += ", "
         self.transpiled_code += ") {\n"
@@ -255,7 +255,7 @@ public class {node.object_name}{extends_clause} {{
 
         for var_name, var_type in node.object_attributes.items():
             self.transpiled_code += f'''
-            public {var_type.lower()} {var_name};
+            public {var_type} {var_name};
             '''
 
         # Transpiling the object constructor
@@ -265,7 +265,7 @@ public class {node.object_name}{extends_clause} {{
 
         # Adding the object attributes
         for i, (param_name, param_type) in enumerate(node.object_attributes.items()):
-            self.transpiled_code += f"{param_type.lower()} {param_name}"
+            self.transpiled_code += f"{param_type} {param_name}"
             if i != len(node.object_attributes) - 1:
                 self.transpiled_code += ", "
         self.transpiled_code += ") {\n"
@@ -298,11 +298,11 @@ public class {node.object_name}{extends_clause} {{
         # Getter and setters
         for var_name, var_type in node.object_attributes.items():
             self.transpiled_code += f'''
-            public {var_type.lower()} get_{var_name}() {{
+            public {var_type} get_{var_name}() {{
                 return this.{var_name};
             }}
 
-            public void set_{var_name}({var_type.lower()} {var_name}) {{
+            public void set_{var_name}({var_type} {var_name}) {{
                 this.{var_name} = {var_name};
             }}
         '''
