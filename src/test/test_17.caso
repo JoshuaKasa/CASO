@@ -1,0 +1,5 @@
+// General type test
+let integer: Int = 1
+let double: Float = 1.0
+let string: Str = "1"
+let boolean: Bool = true
