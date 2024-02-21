@@ -44,6 +44,7 @@ def main(input_path: str) -> None:
         from caso_parser import CASOParser
         parser = CASOParser(tokens)
         nodes = parser.parse()
+        scope_stack = parser.scope_stack
         print("Parsed Nodes:", nodes)
 
         print("\n")  # Separation
@@ -51,7 +52,7 @@ def main(input_path: str) -> None:
         # ------------------ TRANSPILER ----------------------
         # Transpiling the AST to target language
         from caso_transpiler import CASOTranspiler
-        transpiler = CASOTranspiler(nodes, file_path=output_file_path)
+        transpiler = CASOTranspiler(nodes, scope_stack, file_path=output_file_path)
         source = transpiler.transpile()
 
         # Ending milliseconds
