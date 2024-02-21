@@ -3,3 +3,8 @@ let integer: Int = 1
 let double: Float = 1.0
 let string: Str = "1"
 let boolean: Bool = true
+let **variable: Int = 1 // This varialbe, uses the 'at' notation, basically, if the variable is not used other than in the declaration, it will not be included in the final code
+let **variable2: Int = 1 // In this case, the variable will be included in the final code, because it is not used anywhere else in the code
+
+integer := integer + 1
+variable := integer + 1

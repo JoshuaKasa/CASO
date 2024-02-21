@@ -16,6 +16,12 @@
         
         boolean boolean = true;
         
+        int variable = 1;
+        
+        integer = integer + 1;
+        
+        variable = integer + 1;
+        
             }
         }
         
