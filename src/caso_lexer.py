@@ -71,6 +71,7 @@ class CASOLexer:
         ('INHERIT', r'@'), # Inheritance operator
         ('PIPE', r'\|'), # Pipe operator (for now used for returns)
         ('DOT', r'\.'), # Dot operator (used for object properties)
+        ('AT', r'\*\*'), # At operator 
 
         # Characters
         ('OPEN_PAREN', r'\('), # Open parenthesis' 

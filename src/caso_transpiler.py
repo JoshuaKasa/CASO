@@ -5,8 +5,9 @@ from caso_exception import CASOTranspilerError
 from caso_types import conversion_table
 
 class CASOTranspiler:
-    def __init__(self, ast, file_path='caso_transpiled.java', create_file=True): 
+    def __init__(self, ast, scope_stack, file_path='caso_transpiled.java', create_file=True): 
         self.ast = ast
+        self.scope_stack = scope_stack
         self.file_path = file_path
         self.file_name = file_path.split("\\")[-1].split(".")[0]
         self.create_file = create_file # This will be used to determine whether or not to create a file
@@ -29,6 +30,20 @@ class CASOTranspiler:
     }
 
     def transpile(self) -> str:
+        # Remove all the variable declarations that haven't been used and follow the 'at' notation
+        # First we will collect the name of names of variables to be removed
+        variables_to_remove = set()
+        for scope in self.scope_stack:
+            for variable_name, variable_info in scope.items():
+                if variable_info['at'] == True and variable_info['used'] == False:
+                    variables_to_remove.add(variable_name)
+
+        # Then we will filter the AST using a single pass
+        if variables_to_remove: # If there are variables to remove
+            self.ast = [node for node in self.ast if not (
+                node and node.node_type == NodeType.VARIABLE_DECLARATION and node.variable_name in variables_to_remove
+            )]
+        
         # We first transpile the general header of the file
         self.transpiled_code = f'''
         // This is the general header template for the transpiled code

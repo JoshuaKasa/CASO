@@ -11,12 +11,16 @@ class CASOSyntaxError(CASOException):
         super().__init__(f"{message} at line {line_num}, character {char_pos}")
 
 class CASONotDeclaredError(CASOSyntaxError):
-    def __init__(self, message, line_num, char_pos):
-        super().__init__(f"{message}", line_num, char_pos)
+    def __init__(self, line_num, char_pos, current_token):
+        super().__init__(f'Variable {current_token} not declared at line {line_num}, character {char_pos}', line_num, char_pos)
 
 class CASOInvalidTypeError(CASOException):
     def __init__(self, line_num, char_pos, current_token):
         super().__init__(f'Invalid variable type: {current_token} at line {line_num}, character {char_pos}')
+
+class CASOMismatchedTypeError(CASOException):
+    def __init__(self, line_num, char_pos, current_token):
+        super().__init__(f'Mismatched variable type: {current_token} at line {line_num}, character {char_pos}')
 
 class CASOIndexError(CASOSyntaxError):
     def __init__(self, message, line_num, char_pos):

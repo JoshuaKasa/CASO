@@ -36,6 +36,8 @@
 
 # TODO: Implement scoping for ALL the possible cases, this means: obejcts, functions, attributes, constructors, etc...
 
+# TODO: Add 'at' notation (me, remember to look at your notes)
+
 from enum import Enum
 
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError
@@ -234,6 +236,11 @@ class CASOParser:
     def parse(self):
         while self.current_position < len(self.tokens):
             self.nodes.append(self.parse_statement())
+
+        # Debug scope stack printing
+        print('Scope stack:')
+        print(self.scope_stack, end='\n\n')
+
         return self.nodes
 
     def parse_statement(self):
@@ -312,11 +319,19 @@ class CASOParser:
         '''This method will return the current token value'''
         return self.current_token().value
 
-    def register_variable(self, variable_name, variable_type):
-        '''This method will register a variable in the current scope'''
+    def register_variable(self, variable_name, variable_type, initial_value=None, used=False, at=False):
+        '''Updated to register a variable with its type, an initial value, and additional info'''
         if self.lookup_variable(variable_name) is not None:
             raise CASOSyntaxError(f"Variable {variable_name} already declared in this scope", self.current_token().line_num, self.current_token().char_pos)
-        self.add_variable_to_current_scope(variable_name, variable_type)
+        
+        variable_info = {
+            'type': variable_type,
+            'value': initial_value,
+            'used': used,
+            'at': at # Check if the variable follows 'at' notation
+        }
+
+        self.add_variable_to_current_scope(variable_name, variable_info)
 
     def is_registered_variable(self, variable_name):
         '''This method will check if a variable is already registered'''
@@ -367,16 +382,24 @@ class CASOParser:
         else:
             raise CASOSyntaxError("No scope to pop", self.current_token().line_num, self.current_token().char_pos)
 
-    def add_variable_to_current_scope(self, variable_name, variable_type):
+    def add_variable_to_current_scope(self, variable_name, variable_info):
+        '''Modifies the scope to store a dictionary with variable information instead of just the type'''
         if variable_name in self.scope_stack[-1]:
-            raise CASONotDeclaredError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
-        self.scope_stack[-1][variable_name] = variable_type
+            raise CASONotDeclaredError(f"Variable {variable_name} already declared in this scope", self.current_token().line_num, self.current_token().char_pos)
+        self.scope_stack[-1][variable_name] = variable_info
 
     def lookup_variable(self, variable_name):
         for scope in reversed(self.scope_stack):
             if variable_name in scope:
                 return scope[variable_name]
         return None  # Variable not found
+
+    def modify_variable_value(self, variable_name, new_value):
+        '''This method will modify the value of a variable'''
+        variable_info = self.lookup_variable(variable_name)
+        if variable_info is None:
+            raise CASONotDeclaredError(self.current_token().line_num, self.current_token().char_pos, self.current_token_type()) 
+        variable_info['value'] = new_value
 
     def current_line_num(self):
         '''This method will return the current line number'''
@@ -399,6 +422,12 @@ class CASOParser:
     def parse_declaration(self):
         self.advance_token() # Skip the LET token
         
+        # Checking for 'at' notation
+        at_notation = False
+        if self.current_token_type() == 'AT':
+            at_notation = True
+            self.advance_token() # Skip the AT token
+
         # The next token should be the variable name
         variable_name_token = self.expect_token("ID")
         variable_name = variable_name_token.value # Save the variable name
@@ -435,7 +464,7 @@ class CASOParser:
             variable_value = self.parse_expression()
 
         # We can now add the variable to the current scope
-        self.add_variable_to_current_scope(variable_name, variable_type)
+        self.register_variable(variable_name, variable_type, variable_value, False, at_notation)
 
         # After all the above, we can add the declaration node to the list of nodes
         append_node = DECLARATIONnode(variable_name, variable_type, variable_value)
@@ -450,15 +479,25 @@ class CASOParser:
         # Check if the variable name is in the dictionary of variables
         self.is_not_registered_variable_exception(variable_name)
 
+        # Adding one to number of times the variable has been used
+        for scope in reversed(self.scope_stack): # Loop through the scope stack
+            if variable_name in scope:
+                variable_info = scope[variable_name] # Get the variable info
+                variable_info['used'] = True # Adding one to the number of times the variable has been used
+                break # Break the loop after the variable has been found
+
         # Now should come the assignment operator
         self.advance_token() # Skip the variable name token
-        assignment_token = self.expect_token("REASSIGN")
+        assignment_token = self.expect_token('REASSIGN')
 
         # Now should come the variable value, which is an expression
         self.advance_token() # Skip the assignment token
         variable_value = self.parse_expression()
         if variable_value == '':
             raise CASOSyntaxError(f"Expected expression, got {variable_value}", assignment_token.line_num, assignment_token.char_pos)
+
+        # Modify the variable value in the dictionary of variables
+        self.modify_variable_value(variable_name, variable_value)
    
         # After all the above, we can add the assignment node to the list of nodes
         append_node = ASSIGNMENTnode(variable_name, variable_value)
@@ -466,37 +505,7 @@ class CASOParser:
 
     # This is the method that will parse ALL expressions
     def parse_expression(self) -> str:
-        expression_tokens = []
-
-        # Checking if the expression is a list
-        if self.current_token_type() == "LIST":
-            self.parse_list_expression()
-
-        # Collect all the tokens until the end of the line
-        while self.current_position < len(self.tokens) and self.current_token_type() != "NEWLINE":
-            if self.tokens[self.current_position].type in self.COMPARISON_OPERATORS:
-                expression_tokens.append(self.tokens[self.current_position])
-            elif self.tokens[self.current_position].type == 'ID':
-                # Checking if the variable is declared
-                if self.lookup_variable(self.current_token_value()) is not None:
-                    expression_tokens.append(self.tokens[self.current_position])
-                else:
-                    raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            elif self.tokens[self.current_position].type == 'NUMBER':
-                expression_tokens.append(self.tokens[self.current_position])
-            elif self.tokens[self.current_position].type == 'STRING_LITERAL':
-                expression_tokens.append(self.tokens[self.current_position])
-            else:
-                raise CASOSyntaxError(f"Unexpected token {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-            self.current_position += 1
-
-        # Skip the 'NEWLINE' token
-        if self.current_position < len(self.tokens) and self.tokens[self.current_position].type == 'NEWLINE':
-            self.current_position += 1
-
-        # Convert to raw string (ensuring all values are strings)
-        expression_string = ' '.join(str(token.value) for token in expression_tokens)
-        return expression_string
+        return self.parse_until('NEWLINE')
 
     # This method will parse a list expression
     def parse_until(self, *token_types: str) -> str:
@@ -512,16 +521,22 @@ class CASOParser:
         expression_tokens = []
 
         # Collect all the tokens until one of the specified token types is found, I gotta check for this fucking new lines every time, I gotta fix this shit
-        while self.current_position < len(self.tokens) and self.tokens[self.current_position].type not in token_types and self.tokens[self.current_position].type != 'NEWLINE':
-            token = self.tokens[self.current_position]
+        while self.current_position < len(self.tokens) and self.current_token_type() not in token_types and self.current_token_type() != 'NEWLINE':
+            token = self.current_token()
             if token.type in self.COMPARISON_OPERATORS:
                 expression_tokens.append(token)
             elif token.type == 'ID':
                 # User is trying to call a variable (never in my life will I implement recursion)
                 if self.is_registered_variable(token.value) == True:
                     expression_tokens.append(token)
+                    # Adding 1 to the number of times the variable has been used
+                    for scope in reversed(self.scope_stack):
+                        if token.value in scope:
+                            variable_info = scope[token.value]
+                            variable_info['used'] = True
+                            break
                 else:
-                    raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+                    raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.current_line_num(), self.current_char_pos())
             elif token.type == 'NUMBER':
                 expression_tokens.append(token)
             elif token.type == 'STRING_LITERAL':
@@ -720,7 +735,7 @@ class CASOParser:
             if parameter_name in parameters:
                 raise CASOSyntaxError(f"Parameter {parameter_name} already declared", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
             # Adding the parameter to the current scope
-            self.add_variable_to_current_scope(parameter_name, 'UKN')
+            self.register_variable(parameter_name, 'UKN')
             
             # Assigning type to the parameter
             self.advance_token() # Skip the parameter name token
@@ -901,7 +916,7 @@ class CASOParser:
         variable = self.current_token_value()
         # Checking if the variable is already defined
         self.is_registered_variable_exception(variable)
-        self.add_variable_to_current_scope(variable, 'INT')
+        self.register_variable(variable, 'INT')
         self.advance_token() # Skip the variable token
 
         self.expect_token('COMMA')
@@ -972,7 +987,7 @@ class CASOParser:
             else:
                 self.is_registered_variable_exception(parameter_name) # Checking if the variable is already defined
             parameters[parameter_name] = parameter_type # Adding the parameter to the dictionary
-            self.add_variable_to_current_scope(parameter_name, parameter_type) # Adding the parameter to the current scope
+            self.register_variable(parameter_name, parameter_type) # Adding the parameter to the current scope
 
             # Skipping the parameter type token
             if parameter_type != 'LIST':
@@ -1033,7 +1048,7 @@ class CASOParser:
             for attribute_name, attribute_type in inherited_class.object_attributes.items():
                 inherited_attributes[attribute_name] = attribute_type
                 # Adding the attribute to the current scope
-                self.add_variable_to_current_scope(attribute_name, attribute_type)
+                self.register_variable(attribute_name, attribute_type)
 
             for method in inherited_class.object_methods:
                 inherited_methods.append(method)
