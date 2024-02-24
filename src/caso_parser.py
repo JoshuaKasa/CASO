@@ -18,6 +18,7 @@
 #   - The error consists on the fact that the parser puts all variables inside the same list and doesn't track the scope of the variables, so if you declare a variable inside a function, even if inside the Java code the variable is transpiled as local, the parser doesn't understand that and throws an error. (DONE)
 
 # TODO: Converting variable types into Java types directly from the parser. (IN PROGRESS - MOMENTARILY PAUSED)
+# TODO: Converting variable types into Java types directly from the parser. (DONE)
 
 # TODO: Implement the 'use' keyword for importing modules. (DONE)
 
