@@ -37,6 +37,8 @@ class CASOLexer:
         ('USE', r'\buse\b'), # Use keyword, used for importing modules
         ('OBJECT', r'\bobj\b'), # Object keyword, used for object declaration (classses in Java)
         ('INIT', r'\binit\b'), # Init keyword, used for object initialization (constructor in Java)
+        ('TAKE', r'\btake\b'), # Take keyword
+        ('FROM', r'\bfrom\b'), # From keyword
 
         # Boolean values
         ('TRUE', r'\btrue\b'), # True keyword
