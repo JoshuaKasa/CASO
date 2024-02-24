@@ -368,6 +368,26 @@ class CASOParser:
         if self.is_registered_variable(variable_name):
             raise CASOSyntaxError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
 
+        '''This method will check if an object is already registered'''
+        return any(obj.object_name == object_name for obj in self.object_stack)
+
+    def is_registered_object_exception(self, object_name):
+        '''This method will check if an object is already registered and raise an exception if it is'''
+        if self.is_registered_object(object_name):
+            raise CASOClassAlreadyDeclaredError(self.current_token().line_num, self.current_token().char_pos, self.current_token_type())
+
+    def is_not_registered_object_exception(self, object_name):
+        '''This method will check if an object is not registered and raise an exception if it is'''
+        if not self.is_registered_object(object_name):
+            raise CASOClassNotFoundError(self.current_token().line_num, self.current_token().char_pos, self.current_token_type())
+
+    def lookup_scopestack(self, name):
+        '''This method will look up any variable/object/function in the scope stack'''
+        for scope in reversed(self.scope_stack):
+            if name in scope:
+                return scope
+        return None
+
     def is_valid_type(self, variable_type):
         '''This method will check if a variable type is valid'''
         return variable_type in self.TYPES
@@ -408,6 +428,10 @@ class CASOParser:
         if variable_name in self.scope_stack[-1]:
             raise CASONotDeclaredError(f"Variable {variable_name} already declared in this scope", self.current_token().line_num, self.current_token().char_pos)
         self.scope_stack[-1][variable_name] = variable_info
+
+    def add_type(self, type_name):
+        '''This method will add a new type to the list of types'''
+        self.TYPES.append(type_name)
 
     def lookup_variable(self, variable_name):
         for scope in reversed(self.scope_stack):
