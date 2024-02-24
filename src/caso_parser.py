@@ -577,26 +577,38 @@ class CASOParser:
         # Collect all the tokens until one of the specified token types is found, I gotta check for this fucking new lines every time, I gotta fix this shit
         while self.current_position < len(self.tokens) and self.current_token_type() not in token_types and self.current_token_type() != 'NEWLINE':
             token = self.current_token()
-                    expression_tokens.append(token)
-                    # Adding 1 to the number of times the variable has been used
-                    for scope in reversed(self.scope_stack):
-                        if token.value in scope:
-                            variable_info = scope[token.value]
-                            variable_info['used'] = True
-                            break
-                else:
-                    raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.current_line_num(), self.current_char_pos())
-            elif token.type == 'NUMBER':
-                expression_tokens.append(token)
-            elif token.type == 'STRING_LITERAL':
-                expression_tokens.append(token)
-            else:
-                raise CASOSyntaxError(f"Unexpected token {token.type}", token.line_num, token.char_pos)
-            self.current_position += 1
 
-        # Skip the token if it matches one of the specified token types
-        if self.current_position < len(self.tokens) and self.tokens[self.current_position].type in token_types:
-            self.current_position += 1 # Skip the token
+            # Check for object attribute access pattern (objet_name.ID)
+            if self.current_token_type() == 'ID' and self.peek_next_token().type == 'DOT':
+                object_name = self.current_token_value()
+            else:
+                if token.type in self.COMPARISON_OPERATORS:
+                    expression_tokens.append(token)
+                elif token.type == 'ID':
+                    # User is trying to call a variable (never in my life will I implement recursion)
+                    if self.is_registered_variable(token.value) == True:
+                        expression_tokens.append(token)
+                        # Adding 1 to the number of times the variable has been used
+                        for scope in reversed(self.scope_stack):
+                            if token.value in scope:
+                                variable_info = scope[token.value]
+                                variable_info['used'] = True
+                                break
+                    else:
+                        raise CASOSyntaxError(f"Expression variable {self.tokens[self.current_position].value} not declared", self.current_line_num(), self.current_char_pos())
+                elif token.type == 'NUMBER':
+                    expression_tokens.append(token)
+                elif token.type == 'STRING_LITERAL':
+                    expression_tokens.append(token)
+                else:
+                    raise CASOSyntaxError(f"Unexpected token {token.type}", token.line_num, token.char_pos)
+                self.current_position += 1
+
+            # Skip the token if it matches one of the specified token types
+            if self.current_position < len(self.tokens) and self.current_token_type() in token_types:
+                if skip_token:
+                    self.current_position += 1 # Skip the token
+                break
 
         # Convert to raw string (ensuring all values are strings)
         expression_string = ' '.join(str(token.value) for token in expression_tokens)
