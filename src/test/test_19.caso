@@ -1,0 +1,12 @@
+// This are what called 'loan' functions. They are used to assign values to variables using something similar to a one-liner.
+let a: Int = from (
+	let b: Int = 1
+	fnc add(c: Int): Int {
+		| b + c
+	}
+) take b
+
+// That above is equivalent to:
+// let b: Int = 1
+// let a: Int = b
+// Functions inside loan nodes are automatically using the 'at' notation (see 'at' notatio in the documentation).
