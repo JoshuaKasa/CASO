@@ -368,6 +368,7 @@ class CASOParser:
         if self.is_registered_variable(variable_name):
             raise CASOSyntaxError(f"Variable {variable_name} already declared", self.current_token().line_num, self.current_token().char_pos)
 
+    def is_registered_object(self, object_name):
         '''This method will check if an object is already registered'''
         return any(obj.object_name == object_name for obj in self.object_stack)
 
@@ -462,6 +463,10 @@ class CASOParser:
         '''This method will return the source code of a library'''
         with open(f"test/libraries/{library_name}.caso", "r") as file:
             return file.read()
+
+    def peek_next_token(self):
+        '''This method will return the next token without advancing the current position'''
+        return self.tokens[self.current_position + 1]
 
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
