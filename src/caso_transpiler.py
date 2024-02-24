@@ -122,6 +122,8 @@ class CASOTranspiler:
                 self.transpile_native_java(node)
             elif node.node_type == NodeType.OBJECT:
                 self.transpile_object(node) 
+            elif node.node_type == NodeType.LOAN:
+                self.transpile_loan(node) 
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -342,3 +344,12 @@ public class {node.object_name}{extends_clause} {{
             self.transpiled_code += f'''
             import standard/{node.module_name}.{functions};
             '''
+
+    def transpile_loan(self, node):
+        # TODO: Make some kind of way of transpiling functions inside a loan
+        # right now they're being parsed as a normal function, but you can't
+        # have a function inside a function in Java
+        for statement in node.loan_body:
+            if statement.node_type == NodeType.FUNCTION_DECLARATION:
+                self.transpile_function_declaration(statement)
+            self.transpile_node(statement)
