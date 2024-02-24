@@ -17,7 +17,6 @@
 # TODO: Fix local variable error:
 #   - The error consists on the fact that the parser puts all variables inside the same list and doesn't track the scope of the variables, so if you declare a variable inside a function, even if inside the Java code the variable is transpiled as local, the parser doesn't understand that and throws an error. (DONE)
 
-# TODO: Converting variable types into Java types directly from the parser. (IN PROGRESS - MOMENTARILY PAUSED)
 # TODO: Converting variable types into Java types directly from the parser. (DONE)
 
 # TODO: Implement the 'use' keyword for importing modules. (DONE)
@@ -41,13 +40,11 @@
 #       for the variable infos stating if it's a object or not, in case it is a object then we can access it, else, we can't. How do we know if the var is a object?
 #       We will simply check if it's been declared after the name of a object (remember we add objects as types whenever we declare one).
 
-# TODO: Add 'at' notation (me, remember to look at your notes)
 # TODO: Add 'at' notation (me, remember to look at your notes). (DONE)
 #   - I should also add the 'at' notation for functions, idk :/
 
 from enum import Enum
 
-from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError, CASOClassAlreadyDeclaredError, CASOMismatchedTypeError
 from caso_lexer import CASOLexer
 from caso_types import conversion_table 
@@ -278,7 +275,6 @@ class CASOParser:
                 self.parse_object_attribute_access()
             else:
                 raise Exception(f"Invalid token {current_token.value} at position {current_token.position}")
-
         elif current_token.type == "WHEN":
             self.parse_when()
         elif current_token.type == "FUNCTION":
@@ -479,7 +475,6 @@ class CASOParser:
             self.advance_token() # Skip the AT token
 
         # The next token should be the variable name
-        variable_name_token = self.expect_token("ID")
         variable_name_token = self.expect_token('ID')
         variable_name = variable_name_token.value # Save the variable name
 
@@ -488,7 +483,6 @@ class CASOParser:
 
         # Now should come the type assignment operator
         self.advance_token() # Skip the variable name token
-        self.expect_token("TYPE_ASSIGN")
         self.expect_token('TYPE_ASSIGN')
 
         # Now should come the variable type
@@ -506,17 +500,13 @@ class CASOParser:
             self.current_position += 1 # Skip the variable type token
 
         # Now should come the assignment operator
-        self.expect_token("ASSIGN")
         self.expect_token('ASSIGN')
 
         # Now should come the variable value, which can be either an expression or a list
-        self.current_position += 1 # Skip the assignment token
-        if is_list:
         self.advance_token() # Skip the assignment token
         if is_list: # If the variable type is a list, then the variable value should be a list expression
             variable_value = self.parse_list_expression()
         else:
-            variable_value = self.parse_expression()
             # Here 2 things could happen, loan functions or an expression
             if self.current_token_type() == 'FROM':
                 # If the current token is a FROM token, then we should parse the loan function
@@ -569,10 +559,10 @@ class CASOParser:
 
     # This is the method that will parse ALL expressions
     def parse_expression(self) -> str:
-        return self.parse_until('NEWLINE')
+        return self.parse_until('NEWLINE', skip_token=False)
 
     # This method will parse a list expression
-    def parse_until(self, *token_types: str) -> str:
+    def parse_until(self, *token_types: str, skip_token: bool = True) -> str:
         ''' 
         This method will parse an expression until one of the specified token types is found, skipping the final token.
 
@@ -587,11 +577,6 @@ class CASOParser:
         # Collect all the tokens until one of the specified token types is found, I gotta check for this fucking new lines every time, I gotta fix this shit
         while self.current_position < len(self.tokens) and self.current_token_type() not in token_types and self.current_token_type() != 'NEWLINE':
             token = self.current_token()
-            if token.type in self.COMPARISON_OPERATORS:
-                expression_tokens.append(token)
-            elif token.type == 'ID':
-                # User is trying to call a variable (never in my life will I implement recursion)
-                if self.is_registered_variable(token.value) == True:
                     expression_tokens.append(token)
                     # Adding 1 to the number of times the variable has been used
                     for scope in reversed(self.scope_stack):
