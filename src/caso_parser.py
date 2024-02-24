@@ -71,6 +71,7 @@ class NodeType(Enum):
     USE = 14
     OBJECT = 15
     ATTRIBUTE_ACCESS = 16
+    LOAN = 17
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -222,6 +223,15 @@ class ATTRIBUTEACCESSnode(ASTnode):
 
     def __repr__(self):
         return f"ATTRIBUTEACCESSnode({repr(self.object_name)}, {repr(self.attribute_name)})"
+
+class LOANnode(ASTnode):
+    def __init__(self, loan_variable):
+        super().__init__(NodeType.LOAN)
+        self.loan_variable = loan_variable
+        self.loan_body = [] # Body of the loan
+
+    def __repr__(self):
+        return f"LOANnode({repr(self.loan_variable)}, {repr(self.loan_body)})"
 
 class CASOParser:
     def __init__(self, tokens):
@@ -438,6 +448,7 @@ class CASOParser:
 
         # The next token should be the variable name
         variable_name_token = self.expect_token("ID")
+        variable_name_token = self.expect_token('ID')
         variable_name = variable_name_token.value # Save the variable name
 
         # Check if the variable name is already in the dictionary of variables
@@ -446,6 +457,7 @@ class CASOParser:
         # Now should come the type assignment operator
         self.advance_token() # Skip the variable name token
         self.expect_token("TYPE_ASSIGN")
+        self.expect_token('TYPE_ASSIGN')
 
         # Now should come the variable type
         self.advance_token() # Skip the type assignment token
@@ -463,13 +475,25 @@ class CASOParser:
 
         # Now should come the assignment operator
         self.expect_token("ASSIGN")
+        self.expect_token('ASSIGN')
 
         # Now should come the variable value, which can be either an expression or a list
         self.current_position += 1 # Skip the assignment token
         if is_list:
+        self.advance_token() # Skip the assignment token
+        if is_list: # If the variable type is a list, then the variable value should be a list expression
             variable_value = self.parse_list_expression()
         else:
             variable_value = self.parse_expression()
+            # Here 2 things could happen, loan functions or an expression
+            if self.current_token_type() == 'FROM':
+                # If the current token is a FROM token, then we should parse the loan function
+                # For doing this, we will set the current variable value to 'None' and then parse the loan function first
+                # so that we can get the variable value from the loan function later
+                self.parse_loan() # For later, here we should get the variable value from the loan function
+                variable_value = self.nodes[-1].loan_variable # Get the variable value from the loan function
+            else:
+                variable_value = self.parse_expression()
 
         # We can now add the variable to the current scope
         self.register_variable(variable_name, variable_type, variable_value, False, at_notation)
@@ -1159,3 +1183,34 @@ class CASOParser:
         # Adding the attribute access to the AST
         attribute_access_node = ATTRIBUTEACCESSnode(object_name, attribute_name)
         self.nodes.append(attribute_access_node)
+
+    # Parse 'loan' functions
+    def parse_loan(self):
+        self.advance_token() # Skip the FROM token
+        self.expect_token('OPEN_PAREN')
+        self.advance_token()
+
+        # Entering a new scope
+        self.push_scope()
+
+        # Parse the body of the loan
+        loan_body = self.parse_action('CLOSE_PAREN')
+        print('Loan body:', loan_body)
+        
+        # After parsing the body, we get the variable we want to take the loan from
+        self.expect_token('TAKE')
+        self.advance_token()
+        self.expect_token('ID') # Expecting an identifier (the variable name)
+        variable_name = self.current_token_value()
+        self.advance_token()
+
+        # Checking if the variable is inside the loan body
+        self.is_not_registered_variable_exception(variable_name)
+
+        # Adding the loan to the AST
+        loan_node = LOANnode(variable_name)
+        loan_node.loan_body = loan_body
+        self.nodes.append(loan_node)
+
+        # Exiting the scope
+        self.pop_scope()
