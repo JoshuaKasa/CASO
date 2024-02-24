@@ -48,6 +48,7 @@
 from enum import Enum
 
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError
+from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError, CASOClassAlreadyDeclaredError, CASOMismatchedTypeError
 from caso_lexer import CASOLexer
 from caso_types import conversion_table 
 
