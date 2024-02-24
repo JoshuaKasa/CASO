@@ -50,6 +50,10 @@ class CASOClassNotFoundError(CASOException):
     def __init__(self, line_num, char_pos, current_token):
         super().__init__(f'Class {current_token} not found at line {line_num}, character {char_pos}')
 
+class CASOClassAlreadyDeclaredError(CASOException):
+    def __init__(self, line_num, char_pos, current_token):
+        super().__init__(f'Class {current_token} already declared at line {line_num}, character {char_pos}')
+
 class CASOImportError(CASOException):
     def __init__(self, line_num, char_pos, current_token):
         super().__init__(f'Import {current_token} not found in libraries at line {line_num}, character {char_pos}')
