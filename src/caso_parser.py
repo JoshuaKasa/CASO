@@ -1191,6 +1191,8 @@ class CASOParser:
     # Parsing object attribute access
     def parse_object_attribute_access(self):
         object_name = self.current_token_value() # Getting the object name
+        self.is_not_registered_object_exception(object_name) # Checking if the object is declared
+
         self.advance_token() # Skip the object name token
         self.advance_token() # Skip the DOT token
         self.expect_token('ID') # Expecting an identifier
