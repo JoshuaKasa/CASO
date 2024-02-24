@@ -748,7 +748,7 @@ class CASOParser:
         return match_case_node
 
     # Method that will parse bodys of actions
-    def parse_action(self):
+    def parse_action(self, end_token='CLOSE_BRACE'):
         # NOTE: THIS WILL BE USED FOR HANDLING EVERYTHING UNTIL THE END OF THE BODY OF SOMETHING (WHEN, FUNCTIONS, ETC)
         # Skip any newlines or unexpected tokens at the beginning 
         # NOTE: ASSUME WE ALREADY SKIPPED THE OPEN BRACE TOKEN
@@ -757,7 +757,7 @@ class CASOParser:
 
         # Now we are at the beginning of the body
         full_body = []
-        while self.current_token_type()  != 'CLOSE_BRACE':
+        while self.current_token_type()  != end_token:
             self.parse_statement()
             if not self.nodes: # Check if the nodes are empty
                 continue # If they are, continue to the next token
@@ -821,17 +821,17 @@ class CASOParser:
         self.expect_token('TYPE_ASSIGN')
 
         # Assigning type to the function
-        self.current_position += 1 # Skip the type assignment token
+        self.advance_token() # Skip the type assignment token
         if self.tokens[self.current_position].type not in self.TYPES: # Check if the type is valid
-            raise CASOSyntaxError(f"Expected type, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
-        function_type = self.tokens[self.current_position].type
+            raise CASOInvalidTypeError(self.current_line_num(), self.current_char_pos(), self.current_token_type())
+        function_type = self.current_token_value()
         
         # Checking for the function body
         self.advance_token() # Skip the type token
         self.expect_token('OPEN_BRACE')
 
         # Parsing the body of the function
-        self.current_position += 1 # Skip the open brace token
+        self.advance_token() # Skip the open brace token
         function_definition_node = FUNCTIONDECLARATIONnode(function_name, parameters, function_type)
         function_body = self.parse_action() # Parsing the body of the function
         function_definition_node.function_body = function_body # No need to skip the close brace token, it is already skipped in the parse_action method
@@ -1074,7 +1074,11 @@ class CASOParser:
 
         self.advance_token() # Skip the OBJECT token
         object_name = self.expect_token('ID').value # The object name should be an identifier
+        self.is_registered_object_exception(object_name) # Checking if the object is already defined
         self.advance_token() # Skip the object name token
+
+        # Since objects can be used as types, we need to register the object as a type
+        self.add_type(object_name)
 
         # We can know parse the parameters
         self.expect_token('OPEN_PAREN')
