@@ -259,6 +259,9 @@ class CASOParser:
         print('Scope stack:')
         print(self.scope_stack, end='\n\n')
 
+        print('Object stack:')
+        print(self.object_stack, end='\n\n')
+
         return self.nodes
 
     def parse_statement(self):
