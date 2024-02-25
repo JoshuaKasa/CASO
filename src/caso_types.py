@@ -7,4 +7,11 @@ conversion_table = {
     'List': 'ArrayList',
     'Empty': 'void',
     'const': 'final',
+    'INT': 'int',
+    'FLOAT': 'float',
+    'STRING': 'String',
+    'BOOL': 'boolean',
+    'ANY': 'Object',
+    'LIST': 'ArrayList',
+    'EMPTY': 'void',
 }
