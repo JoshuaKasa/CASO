@@ -193,6 +193,15 @@ class JAVASOURCEnode(ASTnode):
 class OBJECTnode(ASTnode):
     def __init__(self, object_name, object_attributes, object_methods=None, parent_class=None, parent_class_attributes=None, parent_class_methods=None):
         super().__init__(NodeType.OBJECT)
+
+        # Before doing allat, we gotta convert the types to Java types
+        for attribute in object_attributes:
+            object_attributes[attribute] = conversion_table[object_attributes[attribute]]
+
+        if parent_class is not None:
+            for attribute in parent_class_attributes:
+                parent_class_attributes[attribute] = conversion_table[parent_class_attributes[attribute]]
+
         self.object_name = object_name
         self.object_attributes = object_attributes
         self.object_methods = object_methods
