@@ -120,7 +120,12 @@ class FUNCTIONDECLARATIONnode(ASTnode):
     def __init__(self, function_name, function_args, return_type):
         super().__init__(NodeType.FUNCTION_DECLARATION)
         self.function_name = function_name
+
+        # Converting all types to Java types
+        for arg in function_args:
+            function_args[arg] = conversion_table[function_args[arg]]
         self.function_args = function_args
+        
         self.return_type = conversion_table[return_type]
         self.function_body = [] # Body of the function
 
