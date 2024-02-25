@@ -177,7 +177,7 @@ class CASOTranspiler:
 
     def transpile_function_declaration(self, node):
         self.transpiled_code += f'''
-        public static {node.return_type} {node.function_name}(
+        public {node.return_type} {node.function_name}(
         '''
         # Iterating over the dictionary of parameters
         for i, (param_name, param_type) in enumerate(node.function_args.items()):
