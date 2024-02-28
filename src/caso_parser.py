@@ -1229,6 +1229,23 @@ class CASOParser:
         attribute_name = self.current_token_value() # Getting the attribute name
         self.advance_token() # Skip the attribute name token
 
+        # Check if it's a method
+        method_name = None
+        if self.current_token_type() == 'OPEN_PAREN':
+            method_name = attribute_name
+
+        # Checking if the attribute is a method and declared
+        for obj in self.object_stack:
+            if obj.object_name == object_name: # The object we want to check for
+                if method_name: # If it's supposed to be a method
+                    method_found = any(method.function_name == method_name for method in obj.object_methods)
+                    if not method_found:
+                        raise CASOMethodNotFoundError(self.current_line_num(), self.current_char_pos(), method_name, object_name)
+                else: # If it's supposed to be an attribute
+                    attribute_found = any(attribute.attribute_name == attribute_name for attribute in obj.object_attributes)
+                    if not attribute_found:
+                        raise CASOAttributeNotFoundError(self.current_line_num(), self.current_char_pos(), attribute_name, object_name)
+
         # Adding the attribute access to the AST
         attribute_access_node = ATTRIBUTEACCESSnode(object_name, attribute_name)
         self.nodes.append(attribute_access_node)
