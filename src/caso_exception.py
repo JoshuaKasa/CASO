@@ -59,10 +59,14 @@ class CASOImportError(CASOException):
         super().__init__(f'Import {current_token} not found in libraries at line {line_num}, character {char_pos}')
 
 class CASOUnexpectedTokenError(CASOException):
-    def __init__(self, line_num, char_pos, current_token, message=None):
+    def __init__(self, line_num, char_pos, current_token, message=None, expected=None):
         if message is None:
+            if expected is not None:
+                super().__init__(f'Unexpected token {current_token} at line {line_num}, character {char_pos}, expected {expected}')
             super().__init__(f'Unexpected token {current_token} at line {line_num}, character {char_pos}')
         else:
+            if expected is not None:
+                super().__init__(f'{message} at line {line_num}, character {char_pos}, expected {expected}')
             super().__init__(f'{message} at line {line_num}, character {char_pos}')
 
 class CASOAttributeNotFoundError(CASOException):
