@@ -1,7 +1,0 @@
-use standard::print_line
-
-fnc main(): Empty {
-	print_line("Hello world!")
-}
-
-main()
