@@ -34,7 +34,6 @@ class CASOLexer:
         ('ELSIF', r'\belsif\b'), # Else if keyword, used for else if statements
         ('LOOP', r'\bloop\b'), # Loop keyword, used for loops
         ('TO', r'\bto\b'), # To keyword, used for loops (example: loop (i, 10 to 20))
-        ('USE', r'\buse\b'), # Use keyword, used for importing modules
         ('OBJECT', r'\bobj\b'), # Object keyword, used for object declaration (classses in Java)
         ('INIT', r'\binit\b'), # Init keyword, used for object initialization (constructor in Java)
         ('TAKE', r'\btake\b'), # Take keyword
