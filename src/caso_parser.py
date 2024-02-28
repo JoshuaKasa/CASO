@@ -45,11 +45,12 @@
 
 from enum import Enum
 
-from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError, CASOClassAlreadyDeclaredError, CASOMismatchedTypeError
+from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError, CASOClassAlreadyDeclaredError, CASOMismatchedTypeError, CASOAttributeNotFoundError, CASOMethodNotFoundError
 from caso_lexer import CASOLexer
 from caso_types import conversion_table 
 
 import os
+import inspect
 
 class NodeType(Enum):
     VARIABLE_DECLARATION = 1
@@ -65,10 +66,11 @@ class NodeType(Enum):
     ELSIF = 11
     LOOP = 12
     JAVA_SOURCE = 13
-    USE = 14
-    OBJECT = 15
-    ATTRIBUTE_ACCESS = 16
-    LOAN = 17
+    OBJECT = 14
+    ATTRIBUTE_ACCESS = 15
+    LOAN = 16
+    INCORPORATE = 17
+    LINK = 18
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -217,15 +219,6 @@ class OBJECTnode(ASTnode):
     def __repr__(self):
         return f"OBJECTnode({repr(self.object_name)}, {repr(self.object_attributes)}, {repr(self.object_methods)}, {repr(self.parent_class)}, {repr(self.parent_class_attributes)}, {repr(self.parent_class_methods)})"
 
-class USEnode(ASTnode):
-    def __init__(self, module_name, imports):
-        super().__init__(NodeType.USE)
-        self.module_name = module_name
-        self.imports = imports
-
-    def __repr__(self):
-        return f"USEnode({repr(self.module_name)}, {repr(self.imports)})"
-
 class ATTRIBUTEACCESSnode(ASTnode):
     def __init__(self, object_name, attribute_name):
         super().__init__(NodeType.ATTRIBUTE_ACCESS)
@@ -243,6 +236,16 @@ class LOANnode(ASTnode):
 
     def __repr__(self):
         return f"LOANnode({repr(self.loan_variable)}, {repr(self.loan_body)})"
+
+class INCORPORATEnode(ASTnode):
+    def __init__(self, module_name, module_attributes, module_methods):
+        super().__init__(NodeType.INCORPORATE)
+        self.module_name = module_name
+        self.module_attributes = module_attributes
+        self.module_methods = module_methods
+
+    def __repr__(self):
+        return f"INCORPORATEnode({repr(self.module_name)}, {repr(self.module_attributes)}, {repr(self.module_methods)})"
 
 class CASOParser:
     def __init__(self, tokens):
@@ -311,13 +314,13 @@ class CASOParser:
             self.parse_object()
         elif current_token.type == 'INIT':
             self.parse_constructor()
-        elif current_token.type == 'USE':
-            self.parse_use()
+        elif current_token.type == 'INCORPORATE':
+            self.parse_incorporate()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
             else:
-                raise CASOIllegalTokenError(f"Unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
+                raise CASOIllegalTokenError(f"Illegal unexpected token {current_token.type}", current_token.line_num, current_token.char_pos)
 
     def expect_token(self, *expected_types):
         """Checks if the current token matches one of the expected types. Raises an error if not."""
@@ -390,7 +393,7 @@ class CASOParser:
     def is_not_registered_object_exception(self, object_name):
         '''This method will check if an object is not registered and raise an exception if it is'''
         if not self.is_registered_object(object_name):
-            raise CASOClassNotFoundError(self.current_token().line_num, self.current_token().char_pos, self.current_token_type())
+            raise CASOClassNotFoundError(self.current_token().line_num, self.current_token().char_pos, self.current_token_value())
 
     def lookup_scopestack(self, name):
         '''This method will look up any variable/object/function in the scope stack'''
@@ -1152,7 +1155,7 @@ class CASOParser:
             if self.current_token_type() == 'FUNCTION': # If the token is a function declaration
                 self.parse_function_declaration()
                 self.advance_token() # Skip the new line token
-                method= self.nodes.pop()
+                method = self.nodes.pop()
                 methods.append(method)
             else:
                 raise CASOInvalidClassMemberError(self.current_line_num(), self.current_char_pos(), self.current_token_type())
