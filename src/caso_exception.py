@@ -65,6 +65,10 @@ class CASOUnexpectedTokenError(CASOException):
         else:
             super().__init__(f'{message} at line {line_num}, character {char_pos}')
 
+class CASOAttributeNotFoundError(CASOException):
+    def __init__(self, line_num, char_pos, current_token, class_name):
+        super().__init__(f'Attribute {current_token} not found in class {class_name} at line {line_num}, character {char_pos}')
+
 class CASOMethodNotFoundError(CASOException):
     def __init__(self, line_num, char_pos, current_token, class_name):
         super().__init__(f'Method {current_token} not found in class {class_name} at line {line_num}, character {char_pos}')
