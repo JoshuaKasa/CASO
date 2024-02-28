@@ -1263,3 +1263,71 @@ class CASOParser:
 
         # Exiting the scope
         self.pop_scope()
+
+    # Parsing modules
+    def parse_incorporate(self):
+        self.advance_token() # Skip the INCORPORATE token
+        self.expect_token('ID') # Expecting an identifier
+        module_name = self.current_token_value() # Getting the module name
+        self.advance_token()
+
+        # Checking if the module exists in the 'library' directory
+        module_path = f'test/libraries/{module_name}.caso'
+        if not os.path.exists(module_path):
+            raise CASOImportError(self.current_line_num(), self.current_char_pos(), module_name)
+
+        # Reading the module
+        module_code = '' # Initializing the module code
+        with open(module_path, 'r') as module_file:
+            module_code = module_file.read()
+
+        # Lexing and parsing the module
+        module_lexer = CASOLexer(module_code)
+        module_tokens = module_lexer.tokenize()
+
+        module_parser = CASOParser(module_tokens)
+        module_ast = module_parser.parse()
+
+        # Importing the module
+        self.expect_token('OPEN_BRACE') # Expecting an open brace
+        self.advance_token() # Skip the open brace token
+
+        imported_attributes = {}
+        imported_methods_names = []
+        while self.current_token_type() != 'CLOSE_BRACE':
+            # Checking for newline
+            if self.current_token_type() == 'NEWLINE':
+                self.advance_token()
+                continue
+            
+            # If it's not a newline, we expect a function name or a variable name (the things we want to import)
+            self.expect_token('ID') # Expecting an identifier, which could either be a function name or a variable name
+            variable_function_name = self.current_token_value() # Getting the name
+            self.advance_token() # Skip the name token
+        self.advance_token() # Skip the close brace token
+
+        # Adding a new object to the AST with the imported methods and attributes
+        imported_methods = [] # This value will store the imported methods as a list of FUNCTIONDECLARATIONnode and VARIABLEDECLARATIONnode objects
+        for node in module_ast: # Iterating over the nodes and adding the imported module to the AST
+            if node != None: # Newline
+                if node.node_type == NodeType.FUNCTION_DECLARATION: # If the node is a function declaration
+                    if len(imported_methods_names) == 0: # This means we want to import all the methods
+                        imported_methods.append(node)
+                    else:
+                        if node.function_name in imported_methods_names: # If the method is in the imported methods list 
+                            imported_methods.append(node)
+                elif node.node_type == NodeType.VARIABLE_DECLARATION: # If the node is a variable declaration
+                    if len(imported_attributes) == 0:
+                        imported_attributes[node.variable_name] = node.variable_type
+                    else:
+                        if node.variable_name in imported_attributes:
+                            imported_attributes[node.variable_name] = node.variable_type
+        
+        # Creating and adding the object to the AST
+        object_node = OBJECTnode(module_name, imported_attributes, imported_methods) 
+        self.nodes.append(object_node) # Adding the object to the AST
+        self.object_stack.append(self.nodes[-1]) # Adding the object to the object stack (this is for inheritance purposes and is done by getting the last element of the nodes list)
+
+        # Adding the module to the AST
+        module_node = INCORPORATEnode(module_name, imported_attributes, imported_methods_names)
+        self.nodes.append(module_node)
