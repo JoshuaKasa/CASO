@@ -1174,50 +1174,6 @@ class CASOParser:
 
         self.advance_token() # Skip the CONSTRUCTOR token
 
-    # Parsing imports, this is done using the USE token
-    def parse_use(self):
-        self.advance_token() # Skip the USE token
-        self.expect_token('ID') # Expecting an identifier
-
-        # Getting the import name
-        import_name = self.current_token_value()
-        if self.library_exists(import_name) == False:
-            raise CASOImportError(self.current_line_num(), self.current_char_pos(), import_name)
-
-        # Parsing the library
-        library_source_code = self.get_library_source_code(import_name)
-
-        tokenizer = CASOLexer(library_source_code)
-        tokens = tokenizer.tokenize()
-
-        parser = CASOParser(tokens)
-        nodes = parser.parse()
-
-        # Getting all the imports from the import name
-        import_list = []
-        self.advance_token() # Skip the import name token
-
-        if self.current_token_type() == 'IMPORT': # Checking if the user wants to import everything
-            self.advance_token() # Skip the import token
-            while self.current_token_type() != 'NEWLINE':
-                self.expect_token('ID') # Expecting an identifier
-                import_list.append(self.current_token_value())
-                self.advance_token() # Skip the import token
-        else:
-            self.advance_token() # Skip the import token
-
-        # Adding the imported funcions/objects/variables to the current scope
-        for node in nodes:
-            # Checking if the node is a function declration and if it is in the import list
-            if node != None and node.node_type == NodeType.FUNCTION_DECLARATION: # If the token isn't a new line and is a function declaration
-                if node.function_name in import_list:
-                    if self.is_registered_function(node.function_name) == False:
-                        self.functions[node.function_name] = node.return_type
-
-        # Adding the import to the AST
-        use_node = USEnode(import_name, import_list)
-        self.nodes.append(use_node)
-
     # Parsing object attribute access
     def parse_object_attribute_access(self):
         object_name = self.current_token_value() # Getting the object name
