@@ -73,6 +73,7 @@ class NodeType(Enum):
     LOAN = 16
     INCORPORATE = 17
     LINK = 18
+    METHOD_ACCESS = 19
 
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
@@ -229,6 +230,16 @@ class ATTRIBUTEACCESSnode(ASTnode):
 
     def __repr__(self):
         return f"ATTRIBUTEACCESSnode({repr(self.object_name)}, {repr(self.attribute_name)})"
+
+class METHODACCESSnode(ASTnode):
+    def __init__(self, object_name, method_name, method_args):
+        super().__init__(NodeType.METHOD_ACCESS)
+        self.object_name = object_name
+        self.method_name = method_name
+        self.method_args = method_args
+
+    def __repr__(self):
+        return f"METHODACCESSnode({repr(self.object_name)}, {repr(self.method_name)}, {repr(self.method_args)})"
 
 class LOANnode(ASTnode):
     def __init__(self, loan_variable):
