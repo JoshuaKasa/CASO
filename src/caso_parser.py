@@ -1218,9 +1218,16 @@ class CASOParser:
                     if not attribute_found:
                         raise CASOAttributeNotFoundError(self.current_line_num(), self.current_char_pos(), attribute_name, object_name)
 
-        # Adding the attribute access to the AST
-        attribute_access_node = ATTRIBUTEACCESSnode(object_name, attribute_name)
-        self.nodes.append(attribute_access_node)
+        # Adding either the attribute or method access to the AST
+        # TODO
+        if method_name: # Parsing the method as a function
+            method_parameters = []
+            # Getting all the parameters
+            self.advance_token() # Skip the open parenthesis token
+            while self.current_token_type() != 'CLOSE_PAREN':
+                # TODO
+        else:
+            pass
 
     # Parse 'loan' functions
     def parse_loan(self):
