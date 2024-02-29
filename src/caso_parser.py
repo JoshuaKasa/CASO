@@ -302,7 +302,7 @@ class CASOParser:
             elif self.tokens[self.current_position + 1].type == "LPAREN":
                 self.parse_function_call()
             elif self.tokens[self.current_position + 1].type == "DOT":
-                self.parse_object_attribute_access()
+                self.parse_object_access()
             else:
                 raise Exception(f"Invalid token {current_token.value} at position {current_token.position}")
         elif current_token.type == "WHEN":
@@ -1191,7 +1191,7 @@ class CASOParser:
         self.advance_token() # Skip the CONSTRUCTOR token
 
     # Parsing object attribute access
-    def parse_object_attribute_access(self):
+    def parse_object_access(self):
         object_name = self.current_token_value() # Getting the object name
         self.is_not_registered_object_exception(object_name) # Checking if the object is declared
 
