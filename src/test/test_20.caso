@@ -1,3 +1,6 @@
 incorp standard {}
 
-standard.print_line()
+let name: Str = "Tommaso"
+standard.print_line("Hello, World!" + name)
+
+standard.print_line
