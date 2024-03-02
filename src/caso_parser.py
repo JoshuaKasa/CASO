@@ -1220,7 +1220,6 @@ class CASOParser:
                         raise CASOAttributeNotFoundError(self.current_line_num(), self.current_char_pos(), attribute_name, object_name)
 
         # Adding either the attribute or method access to the AST
-        # TODO
         if method_name: # Parsing the method as a function
             method_parameters = []
             # Getting all the parameters
