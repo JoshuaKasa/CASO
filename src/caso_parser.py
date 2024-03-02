@@ -984,6 +984,7 @@ class CASOParser:
             parameter = self.parse_until('COMMA', 'CLOSE_PAREN') # The method already skips the comma or close parenthesis token
             parameters.append(parameter)
             if parameter == '':
+            if parameter == '': # If the parameter is empty, it means that there are no more parameters
                 break
         if parameters[-1] == '':
             parameters.pop(-1)
