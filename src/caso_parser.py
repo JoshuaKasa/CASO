@@ -1224,10 +1224,25 @@ class CASOParser:
             method_parameters = []
             # Getting all the parameters
             self.advance_token() # Skip the open parenthesis token
-            while self.current_token_type() != 'CLOSE_PAREN':
-                # TODO
+            # I gotta do this for a strange bug where it doesn't skip the close parenthesis token when there are no parameters
+            if self.current_token_type() != 'CLOSE_PAREN':
+                while True:
+                    method_parameter = self.parse_until('COMMA', 'CLOSE_PAREN') # Parsing the parameter until we find a close parenthesis or a comma
+                    method_parameters.append(method_parameter)
+                    # Either no more parameters or empty parameter
+                    if method_parameter == '':
+                        break 
+                    # We are already skipping the comma and everything else in the parse_until function
+                if method_parameters[-1] == '': # If the last parameter is empty, we pop it
+                    method_parameters.pop()
+                print('Method parameters:', method_parameters)
+            else:
+                self.advance_token() # Skip the close parenthesis token
+            method_node = METHODACCESSnode(object_name, method_name, method_parameters)
+            self.nodes.append(method_node)
         else:
-            pass
+            attribute_node = ATTRIBUTEACCESSnode(object_name, attribute_name)
+            self.nodes.append(attribute_node)
 
     # Parse 'loan' functions
     def parse_loan(self):
