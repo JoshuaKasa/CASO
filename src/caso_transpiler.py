@@ -58,6 +58,8 @@ class CASOTranspiler:
                 continue
             if node.node_type == NodeType.USE:
                 self.transpile_use(node)
+            if node.node_type == NodeType.INCORPORATE:
+                self.transpile_incorporate(node)
                 self.ast.remove(node)
 
         # Adding the main file
@@ -342,8 +344,12 @@ public class {node.object_name}{extends_clause} {{
 
     def transpile_use(self, node):
         for functions in node.imports:
+    def transpile_incorporate(self, node):
+        full_imports = list(node.module_attributes) + list(node.module_methods) + [''] # Joining a empty list to avoid None in case nothing is imported
+        for import_name in full_imports:
+            import_name = f'module_name.{import_name}' if len(full_imports) > 1 else f'{node.module_name}'
             self.transpiled_code += f'''
-            import standard/{node.module_name}.{functions};
+            import {import_name};
             '''
 
     def transpile_loan(self, node):
