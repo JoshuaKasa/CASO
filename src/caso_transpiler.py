@@ -1,4 +1,5 @@
 import re
+import os
 
 from caso_parser import NodeType
 from caso_exception import CASOTranspilerError
