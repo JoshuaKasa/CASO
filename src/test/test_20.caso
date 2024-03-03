@@ -2,5 +2,3 @@ incorp standard {}
 
 let name: Str = "Tommaso"
 standard.print_line("Hello, World!" + name)
-
-standard.print_line
