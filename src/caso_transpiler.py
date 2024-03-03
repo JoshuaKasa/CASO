@@ -130,6 +130,16 @@ class CASOTranspiler:
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
+    def transpile_node_to_string(self, node):
+        initial_transpiled = self.transpiled_code
+        self.transpile_node(node)
+
+        # Getting the difference between the initial transpiled code and the final transpiled code
+        difference_transpiled = self.transpiled_code[len(initial_transpiled):]
+        self.transpiled_code = initial_transpiled
+        
+        return difference_transpiled
+
     def transpile_declaration(self, node):
         self.transpiled_code += f'''
         {node.variable_type} {node.variable_name} = {node.variable_value};
