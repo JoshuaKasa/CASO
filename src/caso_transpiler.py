@@ -280,56 +280,60 @@ class CASOTranspiler:
         '''
 
     def transpile_object(self, node):
+        # Ensure the libraries directory exists
+        os.makedirs('build/libraries', exist_ok=True)
+        
+        # File path for the new file
+        file_path = os.path.join('build/libraries', f"{node.object_name}.java")
+        
+        # Initialize transpiled_code
+        transpiled_code = '' # The transpiled code for the object
+        
         extends_clause = f" extends {node.parent_class}" if node.parent_class else ""
-        self.transpiled_code += f'''
-public class {node.object_name}{extends_clause} {{
-'''
+        transpiled_code += f'''
+        public class {node.object_name}{extends_clause} {{
+        '''
 
         for var_name, var_type in node.object_attributes.items():
-            self.transpiled_code += f'''
+            transpiled_code += f'''
             public {var_type} {var_name};
             '''
 
         # Transpiling the object constructor
-        self.transpiled_code += f'''
+        transpiled_code += f'''
         public {node.object_name} (
         '''
 
-        # Adding the object attributes
         for i, (param_name, param_type) in enumerate(node.object_attributes.items()):
-            self.transpiled_code += f"{param_type} {param_name}"
+            transpiled_code += f"{param_type} {param_name}"
             if i != len(node.object_attributes) - 1:
-                self.transpiled_code += ", "
-        self.transpiled_code += ") {\n"
+                transpiled_code += ", "
+        transpiled_code += ") {\n"
 
-        # Adding all the parent class attributes (we gotta do this before the constructor as Java requires it)
         if node.parent_class:
-            self.transpiled_code += f''' 
+            transpiled_code += f''' 
             super(
             '''
-            # Getting the parent class attributes
             for i, (attr_name, attr_type) in enumerate(node.parent_class_attributes.items()):
-                self.transpiled_code += f"{attr_name}"
+                transpiled_code += f"{attr_name}"
                 if i != len(node.parent_class_attributes) - 1:
-                    self.transpiled_code += ", "
-            self.transpiled_code += ");\n" # End of the parent class constructor 
+                    transpiled_code += ", "
+            transpiled_code += ");\n"
 
-        # Assigning the object attributes
         for var_name, var_type in node.object_attributes.items():
-            self.transpiled_code += f'''
+            transpiled_code += f'''
             this.{var_name} = {var_name};
             '''
-        self.transpiled_code += '''
+        transpiled_code += '''
         }
-        ''' # End of the constructor
-        
-        # Transpiling the object methods
-        for method in node.object_methods:
-            self.transpile_function_declaration(method)
+        '''
 
-        # Getter and setters
+        for method in node.object_methods:
+            # Assuming transpile_function_declaration appends to transpiled_code
+            transpiled_code += self.transpile_function_declaration(method, transpile_to_main=False)
+
         for var_name, var_type in node.object_attributes.items():
-            self.transpiled_code += f'''
+            transpiled_code += f'''
             public {var_type} get_{var_name}() {{
                 return this.{var_name};
             }}
@@ -339,23 +343,24 @@ public class {node.object_name}{extends_clause} {{
             }}
         '''
 
-        # Overriding the toString method
-        self.transpiled_code += f'''
+        transpiled_code += f'''
         @Override
         public String toString() {{
             return "{node.object_name}(" +
         '''
         for i, (var_name, var_type) in enumerate(node.object_attributes.items()):
-            self.transpiled_code += f'''
+            transpiled_code += f'''
             "{var_name}=" + this.{var_name} +
             '''
-        self.transpiled_code += '''
+        transpiled_code += '''
             ")";
         }}
         '''
 
-    def transpile_use(self, node):
-        for functions in node.imports:
+        # Writing the transpiled code to the file
+        with open(file_path, 'w') as file:
+            file.write(transpiled_code)
+
     def transpile_incorporate(self, node):
         full_imports = list(node.module_attributes) + list(node.module_methods) + [''] # Joining a empty list to avoid None in case nothing is imported
         for import_name in full_imports:
