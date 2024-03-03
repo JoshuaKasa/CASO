@@ -190,23 +190,30 @@ class CASOTranspiler:
                 }
                 '''
 
-    def transpile_function_declaration(self, node):
-        self.transpiled_code += f'''
+    def transpile_function_declaration(self, node, transpile_to_main=True):
+        local_transpiled_code = f'''
         public {node.return_type} {node.function_name}(
         '''
         # Iterating over the dictionary of parameters
         for i, (param_name, param_type) in enumerate(node.function_args.items()):
-            self.transpiled_code += f"{param_type} {param_name}"
+            local_transpiled_code += f"{param_type} {param_name}"
             if i != len(node.function_args) - 1:
-                self.transpiled_code += ", "
-        self.transpiled_code += ") {\n"
+                local_transpiled_code += ", "
+        local_transpiled_code += ") {\n"
 
         # Iterating over the function body
         for statement in node.function_body:
-            self.transpile_node(statement)
-        self.transpiled_code += '''
+            if transpile_to_main:
+                self.transpile_node(statement)
+            else:
+                local_transpiled_code += self.transpile_node_to_string(statement)
+        local_transpiled_code += '''
         }
         '''
+        if transpile_to_main:
+            self.transpiled_code += local_transpiled_code
+        # This transpile function returns a value 'cause we need to use it inside the transpile object method
+        return local_transpiled_code
 
     def transpile_return(self, node):
         self.transpiled_code += f'''
