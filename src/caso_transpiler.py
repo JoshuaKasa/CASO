@@ -56,8 +56,6 @@ class CASOTranspiler:
         for node in self.ast:
             if node == None:
                 continue
-            if node.node_type == NodeType.USE:
-                self.transpile_use(node)
             if node.node_type == NodeType.INCORPORATE:
                 self.transpile_incorporate(node)
                 self.ast.remove(node)
@@ -126,7 +124,11 @@ class CASOTranspiler:
             elif node.node_type == NodeType.OBJECT:
                 self.transpile_object(node) 
             elif node.node_type == NodeType.LOAN:
-                self.transpile_loan(node) 
+                self.transpile_loan(node)
+            elif node.node_type == NodeType.ATTRIBUTE_ACCESS:
+                self.transpile_attribute_access(node)
+            elif node.node_type == NodeType.METHOD_ACCESS:
+                self.transpile_method_access(node)
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
