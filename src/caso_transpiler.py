@@ -360,3 +360,18 @@ public class {node.object_name}{extends_clause} {{
             if statement.node_type == NodeType.FUNCTION_DECLARATION:
                 self.transpile_function_declaration(statement)
             self.transpile_node(statement)
+
+    def transpile_attribute_access(self, node):
+        self.transpiled_code += f'''
+        {node.object_name}.{node.attribute_name}
+        '''
+
+    def transpile_method_access(self, node):
+        self.transpiled_code += f'''
+        {node.object_name}.{node.method_name}(
+        '''
+        for i, arg in enumerate(node.method_args):
+            self.transpiled_code += f'{arg}'
+            if i != len(node.method_args) - 1:
+                self.transpiled_code += ', '
+        self.transpiled_code += ');'
