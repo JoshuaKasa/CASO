@@ -191,8 +191,10 @@ class CASOTranspiler:
                 '''
 
     def transpile_function_declaration(self, node, transpile_to_main=True):
+        static_code = 'static ' if node.is_shared else ''
+
         local_transpiled_code = f'''
-        public {node.return_type} {node.function_name}(
+        public {static_code} {node.return_type} {node.function_name}(
         '''
         # Iterating over the dictionary of parameters
         for i, (param_name, param_type) in enumerate(node.function_args.items()):
@@ -291,10 +293,10 @@ class CASOTranspiler:
         os.makedirs('build/libraries', exist_ok=True)
         
         # File path for the new file
-        file_path = os.path.join('build/libraries', f"{node.object_name}.java")
+        file_path = os.path.join('build/libraries', f'{node.object_name}.java')
         
         # Initialize transpiled_code
-        transpiled_code = '' # The transpiled code for the object
+        transpiled_code = 'package libraries;' # The transpiled code for the object
         
         extends_clause = f" extends {node.parent_class}" if node.parent_class else ""
         transpiled_code += f'''
@@ -373,8 +375,8 @@ class CASOTranspiler:
         for import_name in full_imports:
             import_name = f'module_name.{import_name}' if len(full_imports) > 1 else f'{node.module_name}'
             self.transpiled_code += f'''
-            import {import_name};
-            '''
+            import libraries.{import_name}; 
+            ''' # Using 'libraries' as the package name for the imported objects cause they're being transpiled to the 'libraries' directory
 
     def transpile_loan(self, node):
         # TODO: Make some kind of way of transpiling functions inside a loan
