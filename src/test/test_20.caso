@@ -1,4 +1,6 @@
-incorp standard {}
+incorp standard {
+	print_line
+}
 
-let name: Str = "Tommaso"
-standard.print_line("Hello, World!" + name)
+let name: Str = "Tommaso" + " " + "Santamaria"
+print_line("Hello, World!" + name)
