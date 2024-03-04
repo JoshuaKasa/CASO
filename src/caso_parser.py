@@ -122,7 +122,7 @@ class MATCHCASEnode(ASTnode):
         return f"MATCHCASEnode({repr(self.match_type)}, {repr(self.match_value)}, {repr(self.children)})"
 
 class FUNCTIONDECLARATIONnode(ASTnode):
-    def __init__(self, function_name, function_args, return_type):
+    def __init__(self, function_name, function_args, return_type, is_shared=False):
         super().__init__(NodeType.FUNCTION_DECLARATION)
         self.function_name = function_name
 
@@ -132,10 +132,11 @@ class FUNCTIONDECLARATIONnode(ASTnode):
         self.function_args = function_args
         
         self.return_type = conversion_table[return_type]
+        self.is_shared = is_shared
         self.function_body = [] # Body of the function
 
     def __repr__(self):
-        return f"FUNCTIONDECLARATIONnode({repr(self.function_name)}, {repr(self.function_args)}, {repr(self.return_type)}, {repr(self.function_body)})"
+        return f"FUNCTIONDECLARATIONnode({repr(self.function_name)}, {repr(self.function_args)}, {repr(self.return_type)}, {repr(self.is_shared)}, {repr(self.function_body)})"
 
 class FUNCTIONCALLnode(ASTnode):
     def __init__(self, function_name, function_args):
@@ -805,7 +806,13 @@ class CASOParser:
 
         # Checking for correct syntax
         self.advance_token() # Skip the FUNCTION token
-        self.expect_token('ID') # Expecting a function name token
+        self.expect_token('ID', 'SHARED') # Expecting a function name token or a shared token
+
+        # Checking if the function is shared
+        is_shared = False
+        if self.current_token_type() == 'SHARED':
+            is_shared = True
+            self.advance_token() # Skip the shared token
 
         # Checking if the function name is already declared
         function_name = self.current_token_value() # Saving the function name
@@ -839,12 +846,12 @@ class CASOParser:
 
             # Checking for comma or close parenthesis
             self.advance_token() # Skip the type token
+            self.expect_token('COMMA', 'CLOSE_PAREN') # Expecting a comma or a close parenthesis token
+
             if self.current_token_type() == 'COMMA':
                 self.current_position += 1 # Skip the comma token
             elif self.current_token_type()  == 'CLOSE_PAREN':
                 break
-            else:
-                raise CASOSyntaxError(f"Expected comma or close parenthesis, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
 
         # Checking for correct syntax
         self.advance_token() # Skip the close parenthesis token
@@ -862,7 +869,7 @@ class CASOParser:
 
         # Parsing the body of the function
         self.advance_token() # Skip the open brace token
-        function_definition_node = FUNCTIONDECLARATIONnode(function_name, parameters, function_type)
+        function_definition_node = FUNCTIONDECLARATIONnode(function_name, parameters, function_type, is_shared)
         function_body = self.parse_action() # Parsing the body of the function
         function_definition_node.function_body = function_body # No need to skip the close brace token, it is already skipped in the parse_action method
 
@@ -1314,6 +1321,14 @@ class CASOParser:
             self.expect_token('ID') # Expecting an identifier, which could either be a function name or a variable name
             variable_function_name = self.current_token_value() # Getting the name
             self.advance_token() # Skip the name token
+
+            # Checking if it's a function or a variable
+            if self.current_token_type() == 'OPEN_PAREN': # If it's a function
+                imported_methods_names.append(variable_function_name)
+            else: # If it's a variable
+                imported_attributes[variable_function_name] = None # We don't need the type, we just need the name
+            self.advance_token()
+            
         self.advance_token() # Skip the close brace token
 
         # Adding a new object to the AST with the imported methods and attributes
