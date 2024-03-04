@@ -39,7 +39,7 @@ class CASOLexer:
         ('TAKE', r'\btake\b'), # Take keyword
         ('FROM', r'\bfrom\b'), # From keyword
         ('INCORPORATE', r'\bincorp\b'), # Incorporate keyword
-        ('LINK', r'\blink\b'), # Link keyword
+        ('SHARED', r'\bshared\b'), # Shared keyword (static in Java)
 
         # Boolean values
         ('TRUE', r'\btrue\b'), # True keyword
