@@ -1,0 +1,28 @@
+let STD_SUCCESS: Int = 0
+let STD_FAILURE: Int = 1
+
+fnc shared print_line(s: Str): Empty {
+	caso___native_java_start
+
+	System.out.println(s);
+
+	caso___native_java_end
+}
+
+fnc shared read_line(prompt: Str): Str {
+	caso___native_java_start
+
+	System.out.print(prompt);
+	return new java.util.Scanner(System.in).nextLine();
+
+	caso___native_java_end
+}
+
+fnc shared read_int(prompt: Str): Int {
+	caso___native_java_start
+
+	System.out.print(prompt);
+	return new java.util.Scanner(System.in).nextInt();
+
+	caso___native_java_end
+}

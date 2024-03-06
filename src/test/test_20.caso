@@ -1,5 +1,8 @@
 incorp standard {
-	print_line
+	print_line,
+	read_line,
+	STD_SUCCESS,
+	STD_FAILURE
 }
 
 let name: Str = "Tommaso" + " " + "Santamaria"
