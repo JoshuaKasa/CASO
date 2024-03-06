@@ -1325,35 +1325,66 @@ class CASOParser:
             self.advance_token() # Skip the name token
 
             # Checking if it's a function or a variable
-            if self.current_token_type() == 'OPEN_PAREN': # If it's a function
-                imported_methods_names.append(variable_function_name)
-            else: # If it's a variable
-                imported_attributes[variable_function_name] = None # We don't need the type, we just need the name
-            self.advance_token()
+            for node in module_ast:
+                if node != None: # Newline
+                    if node.node_type == NodeType.FUNCTION_DECLARATION: # If the node is a function declaration
+                        if variable_function_name == node.function_name:
+                            imported_methods_names.append(variable_function_name)
+                    elif node.node_type == NodeType.VARIABLE_DECLARATION: # If the node is a variable declaration
+                        if variable_function_name == node.variable_name:
+                            imported_attributes[variable_function_name] = node.variable_value
+            self.advance_token() # Skip the comma token
+            self.expect_token('NEWLINE', 'CLOSE_BRACE')
             
         self.advance_token() # Skip the close brace token
 
-        # Adding a new object to the AST with the imported methods and attributes
-        imported_methods = [] # This value will store the imported methods as a list of FUNCTIONDECLARATIONnode and VARIABLEDECLARATIONnode objects
-        for node in module_ast: # Iterating over the nodes and adding the imported module to the AST
-            if node != None: # Newline
-                if node.node_type == NodeType.FUNCTION_DECLARATION: # If the node is a function declaration
-                    if len(imported_methods_names) == 0: # This means we want to import all the methods
-                        imported_methods.append(node)
-                    else:
-                        if node.function_name in imported_methods_names: # If the method is in the imported methods list 
+        # Adding the full library object only if no methods or attributes were imported
+        if len(imported_methods_names) == 0 and len(imported_attributes) == 0:
+            imported_methods = [] # This value will store the imported methods as a list of FUNCTIONDECLARATIONnode and VARIABLEDECLARATIONnode objects
+            for node in module_ast: # Iterating over the nodes and adding the imported module to the AST
+                if node != None: # Newline
+                    if node.node_type == NodeType.FUNCTION_DECLARATION: # If the node is a function declaration
+                        if len(imported_methods_names) == 0: # This means we want to import all the methods
                             imported_methods.append(node)
-                elif node.node_type == NodeType.VARIABLE_DECLARATION: # If the node is a variable declaration
-                    if len(imported_attributes) == 0:
-                        imported_attributes[node.variable_name] = node.variable_type
-                    else:
-                        if node.variable_name in imported_attributes:
+                        else:
+                            if node.function_name in imported_methods_names: # If the method is in the imported methods list 
+                                imported_methods.append(node)
+                    elif node.node_type == NodeType.VARIABLE_DECLARATION: # If the node is a variable declaration
+                        if len(imported_attributes) == 0:
                             imported_attributes[node.variable_name] = node.variable_type
-        
-        # Creating and adding the object to the AST
-        object_node = OBJECTnode(module_name, imported_attributes, imported_methods) 
-        self.nodes.append(object_node) # Adding the object to the AST
-        self.object_stack.append(self.nodes[-1]) # Adding the object to the object stack (this is for inheritance purposes and is done by getting the last element of the nodes list)
+                        else:
+                            if node.variable_name in imported_attributes:
+                                imported_attributes[node.variable_name] = node.variable_type
+            
+            # Creating and adding the object to the AST
+            object_node = OBJECTnode(module_name, imported_attributes, imported_methods) 
+            self.nodes.append(object_node) # Adding the object to the AST
+            self.object_stack.append(self.nodes[-1]) # Adding the object to the object stack (this is for inheritance purposes and is done by getting the last element of the nodes list)
+        # If some methods were imported, we add them to the AST separately
+        else:
+            # Adding the imported methods and attributes to the AST
+            for node in module_ast:
+                if node != None: # Newline
+                    if node.node_type == NodeType.FUNCTION_DECLARATION:
+                        if node.function_name in imported_methods_names:
+                            self.nodes.append(node)
+    
+                            # Adding the imported methods to the current stack
+                            function_name = node.function_name
+                            function_type = node.return_type
+                            parameters = node.function_args
+
+                            self.functions[function_name] = (parameters, function_type)
+
+                    elif node.node_type == NodeType.VARIABLE_DECLARATION:
+                        if node.variable_name in imported_attributes:
+                            self.nodes.append(node)
+                            
+                            # Adding the imported attributes to the current stack
+                            variable_name = node.variable_name
+                            variable_type = node.variable_type
+                            variable_value = node.variable_value
+                            self.register_variable(variable_name, variable_type, variable_value)
 
         # Adding the module to the AST
         module_node = INCORPORATEnode(module_name, imported_attributes, imported_methods_names)
