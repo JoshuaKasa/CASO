@@ -45,6 +45,8 @@
 
 # TODO: Add '@dataclass' to all of my objects (for making code cleaner and easier to read).
 
+# TODO: Add function and variable properties (example: this function can't return a value greater than 10, or this variable can't be greater than 10).
+
 from enum import Enum
 
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError, CASOClassAlreadyDeclaredError, CASOMismatchedTypeError, CASOAttributeNotFoundError, CASOMethodNotFoundError
