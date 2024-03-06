@@ -66,11 +66,17 @@ class CASOTranspiler:
         '''
 
         # Before transpiling the main method we must transpile all the function declarations
-        for node in self.ast:
-            if node == None:
+        '''
+        For a better explanation of why we're using `reversed(self.ast)`:
+            If we don't when the loop finds a function declaration node, it removes it from the list, because the node is removed,
+            all subsequent nodes are shifted to the left, but meanwhile, the loop goes to the next index, skipping the node that was
+            shifted to the left. 
+        '''
+        for node in reversed(self.ast): # We doing it in reverse so that even if we remove a node, we don't skip any
+            if node is None:
                 continue
             if node.node_type == NodeType.FUNCTION_DECLARATION:
-                self.transpile_function_declaration(node)
+                self.transpile_function_declaration(node, transpile_to_main=False)
                 self.ast.remove(node)
 
         # Now we can transpile the main method
