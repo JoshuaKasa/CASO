@@ -307,7 +307,7 @@ class CASOParser:
             elif self.tokens[self.current_position + 1].type == "DOT":
                 self.parse_object_access()
             else:
-                raise Exception(f"Invalid token {current_token.value} at position {current_token.position}")
+                raise CASOSyntaxError(f"Unexpected token {self.current_token_value()}", self.current_line_num(), self.current_char_pos())
         elif current_token.type == "WHEN":
             self.parse_when()
         elif current_token.type == "FUNCTION":
