@@ -1,3 +1,6 @@
+let STD_SUCCESS: Int = 0
+let STD_FAILURE: Int = 1
+
 fnc shared print_line(s: Str): Empty {
 	caso___native_java_start
 
