@@ -302,7 +302,7 @@ class CASOParser:
         elif current_token.type == "ID":
             if self.tokens[self.current_position + 1].type == "REASSIGN":
                 self.parse_assignment()
-            elif self.tokens[self.current_position + 1].type == "LPAREN":
+            elif self.peek_next_token().type == 'OPEN_PAREN':
                 self.parse_function_call()
             elif self.tokens[self.current_position + 1].type == "DOT":
                 self.parse_object_access()
