@@ -3,15 +3,13 @@
         import java.util.Scanner;
         import java.util.ArrayList;
         
-            import libraries.module_name.STD_SUCCESS; 
+            import libraries.standard.STD_SUCCESS; 
             
-            import libraries.module_name.STD_FAILURE; 
+            import libraries.standard.STD_FAILURE; 
             
-            import libraries.module_name.print_line; 
+            import libraries.standard.print_line; 
             
-            import libraries.module_name.read_line; 
-            
-            import libraries.module_name.; 
+            import libraries.standard.read_line; 
             
         public class test_20 {
         
