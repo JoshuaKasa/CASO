@@ -396,8 +396,8 @@ class CASOTranspiler:
                 ''' # Using 'libraries' as the package name for the imported objects cause they're being transpiled to the 'libraries' directory
         else:
             self.transpiled_code += f'''
-            import libraries.{import_name}; 
-            ''' # Using 'libraries' as the package name for the imported objects cause they're being transpiled to the 'libraries' directory
+            import libraries.{node.module_name};
+            '''
 
     def transpile_loan(self, node):
         # TODO: Make some kind of way of transpiling functions inside a loan
