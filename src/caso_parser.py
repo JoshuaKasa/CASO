@@ -86,14 +86,19 @@ class ASTnode:
         return f"ASTnode({repr(self.node_type)}, {repr(self.children)})"
 
 class DECLARATIONnode(ASTnode):
-    def __init__(self, variable_name, variable_type, expression_string):
+    def __init__(self, variable_name, variable_type, expression_string, is_object=False, object_properties=None):
         super().__init__(NodeType.VARIABLE_DECLARATION)
         self.variable_name = variable_name
-        self.variable_type = conversion_table[variable_type]
+        if is_object == False:
+            self.variable_type = conversion_table[variable_type]
+        else:
+            self.variable_type = variable_type
         self.variable_value = expression_string
+        self.is_object = is_object
+        self.object_properties = object_properties
 
     def __repr__(self):
-        return f"DECLARATIONnode({repr(self.variable_name)}, {repr(self.variable_type)}, {repr(self.variable_value)})"
+        return f"DECLARATIONnode({repr(self.variable_name)}, {repr(self.variable_type)}, {repr(self.variable_value)}, {repr(self.is_object)}, {repr(self.object_properties)})"
 
 class ASSIGNMENTnode(ASTnode):
     def __init__(self, variable_name, expression_string):
