@@ -149,9 +149,18 @@ class CASOTranspiler:
         return difference_transpiled
 
     def transpile_declaration(self, node):
-        self.transpiled_code += f'''
-        {node.variable_type} {node.variable_name} = {node.variable_value};
-        '''
+        if node.is_object:
+            self.transpiled_code += f'''
+            {node.variable_type} {node.variable_name} = new {node.variable_type}('''
+            for i, property in enumerate(node.object_properties):
+                self.transpiled_code += f'{property}'
+                if i != len(node.object_properties) - 1:
+                    self.transpiled_code += ', '
+            self.transpiled_code += ');\n'
+        else:
+            self.transpiled_code += f'''
+            {node.variable_type} {node.variable_name} = {node.variable_value};
+            '''
 
     def transpile_assignment(self, node):
         self.transpiled_code += f'''
