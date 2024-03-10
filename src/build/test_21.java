@@ -3,12 +3,16 @@
         import java.util.Scanner;
         import java.util.ArrayList;
         
-        public class test_18 {
+                import static libraries.standard.print_line; 
+                
+        public class test_21 {
         
             public static void main(String[] args) {
 
         
-        Hello.try_object(
+            Me me = new Me("Tommaso", "Santamaria");
+
+        me.print_informations(
         );
             }
         }
