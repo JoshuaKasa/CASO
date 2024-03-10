@@ -7,10 +7,3 @@ obj Hello(age: Int) {
 		| "This is a test."
 	}
 }
-
-// This below will throw an error, because the object is already defined
-// obj Hello(age: Int) {
-// 	fnc say_hello(): Str {
-//		| "Hello, World! I am " + age + " years old."
-//	}
-// }

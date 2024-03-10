@@ -1,0 +1,16 @@
+incorp standard {
+	print_line
+}
+
+obj Me(name: Str, surname: Str) {
+	fnc print_informations(): Empty {
+		print_line("Name: " + name)
+		print_line("Surname: " + surname)
+	}
+}
+
+let me: Me = {
+	"Tommaso",
+	"Santamaria"
+}
+me.print_informations()
