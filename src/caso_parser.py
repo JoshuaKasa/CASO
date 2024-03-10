@@ -21,20 +21,20 @@
 
 # TODO: Implement the 'use' keyword for importing modules. (DONE)
 
-# TODO: Implement the 'object' keyword for object declaration (classes in Java):
+# TODO: Implement the 'object' keyword for object declaration (classes in Java): (DONE)
 #   - I gotta implement a OBJECTnode and then make the syntax and all. (DONE)
 #   - I need another stack for the object attributes and methods, as they are not the same as the global variables and functions. (DONE)
-#   - Implement full inheritance. (IN PROGRESS - ALMOST DONE)
+#   - Implement full inheritance. (DONE)
 
 # TODO: Add libraries function and variable calls, for future me, here's a example: (IN PROGRESS)
 #   - `use standard`
 #   - `standard::print_line("Hello, World!")`
 
-# TODO: Add being able to use `self` `super` and the dot operator for object attributes and methods. (IN PROGRESS)
-#   - Gotta check for errors and existing objects and shit, for now I've only made the general AST node
-#   - Future me, don't forget to add objects as types for variables (basically object declaration you stupid bastard)
+# TODO: Add being able to use `self` `super` and the dot operator for object attributes and methods. (DONE)
+#   - Gotta check for errors and existing objects and shit, for now I've only made the general AST node (DONE)
+#   - Future me, don't forget to add objects as types for variables (basically object declaration you stupid bastard) (DONE)
 
-# TODO: Implement scoping for ALL the possible cases, this means: obejcts, functions, attributes, constructors, etc... (IN PROGRESS)
+# TODO: Implement scoping for ALL the possible cases, this means: obejcts, functions, attributes, constructors, etc... (DONE)
 #   - I can't do it all today, so for future me, remember this pseudocode:
 #       First thing that comes to my mind is to make it so that declared variables can actually be seen as objects, this means that I'll need to make a new parameter
 #       for the variable infos stating if it's a object or not, in case it is a object then we can access it, else, we can't. How do we know if the var is a object?
