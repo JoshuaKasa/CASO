@@ -386,9 +386,15 @@ class CASOTranspiler:
             file.write(transpiled_code)
 
     def transpile_incorporate(self, node):
-        full_imports = list(node.module_attributes) + list(node.module_methods) + [] # Joining a empty list to avoid None in case nothing is imported
-        for import_name in full_imports:
-            import_name = f'{node.module_name}.{import_name}' if len(full_imports) > 1 else f'{node.module_name}'
+        # We don't want to import attributes as they will be transpiled separately
+        full_imports = list(node.module_methods) + [] # Joining a empty list to avoid None in case nothing is imported
+        if len(full_imports) > 0:
+            for import_name in full_imports:
+                import_name = f'{node.module_name}.{import_name}' if len(full_imports) > 0 else f'{node.module_name}'
+                self.transpiled_code += f'''
+                import static libraries.{import_name}; 
+                ''' # Using 'libraries' as the package name for the imported objects cause they're being transpiled to the 'libraries' directory
+        else:
             self.transpiled_code += f'''
             import libraries.{import_name}; 
             ''' # Using 'libraries' as the package name for the imported objects cause they're being transpiled to the 'libraries' directory
