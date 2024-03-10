@@ -22,6 +22,10 @@ class CASOMismatchedTypeError(CASOException):
     def __init__(self, line_num, char_pos, current_token):
         super().__init__(f'Mismatched variable type: {current_token} at line {line_num}, character {char_pos}')
 
+class CASONotSharedError(CASOException):
+    def __init__(self, line_num, char_pos, current_token):
+        super().__init__(f'Trying to call not shared method or variable {current_token} as shared at line {line_num}, character {char_pos}')
+
 class CASOIndexError(CASOSyntaxError):
     def __init__(self, message, line_num, char_pos):
         super().__init__(f"{message}", line_num, char_pos)
@@ -68,6 +72,10 @@ class CASOUnexpectedTokenError(CASOException):
             if expected is not None:
                 super().__init__(f'{message} at line {line_num}, character {char_pos}, expected {expected}')
             super().__init__(f'{message} at line {line_num}, character {char_pos}')
+
+class CASOArgumentNumberError(CASOException):
+    def __init__(self, line_num, char_pos, current_token, expected, received):
+        super().__init__(f'Invalid number of arguments for class or method {current_token} at line {line_num}, character {char_pos}, expected {expected}, received {received}')
 
 class CASOAttributeNotFoundError(CASOException):
     def __init__(self, line_num, char_pos, current_token, class_name):
