@@ -214,7 +214,9 @@ class OBJECTnode(ASTnode):
 
         # Before doing allat, we gotta convert the types to Java types
         for attribute in object_attributes:
-            object_attributes[attribute] = conversion_table[object_attributes[attribute]]
+            # Checking if the variable is already a Java type
+            if object_attributes[attribute] not in conversion_table.values():
+                object_attributes[attribute] = conversion_table[object_attributes[attribute]]
 
         if parent_class is not None:
             for attribute in parent_class_attributes:
