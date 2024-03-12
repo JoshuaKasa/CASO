@@ -1421,6 +1421,11 @@ class CASOParser:
             object_node = OBJECTnode(module_name, imported_attributes, imported_methods) 
             self.nodes.append(object_node) # Adding the object to the AST
             self.object_stack.append(self.nodes[-1]) # Adding the object to the object stack (this is for inheritance purposes and is done by getting the last element of the nodes list)
+
+            # Resetting the imported methods and attributes so that when we create the incoporate node we don't add the methods and attributes again (we're importing the full library)
+            imported_methods = []
+            imported_attributes = {}
+
         # If some methods were imported, we add them to the AST separately
         else:
             # Adding the imported methods and attributes to the AST
