@@ -1283,8 +1283,13 @@ class CASOParser:
         for obj in self.object_stack:
             if obj.object_name == object_name: # The object we want to check for
                 if method_name: # If it's supposed to be a method
-                    method_found = any(method.function_name == method_name for method in obj.object_methods)
-                    if not method_found:
+                    # Checking if the method is declared and shared
+                    method_exists = any(method.function_name == method_name for method in obj.object_methods)
+                    if method_exists:
+                        method_shared = any(method.is_shared for method in obj.object_methods)
+                        if not method_shared:
+                            raise CASONotSharedError(self.current_line_num(), self.current_char_pos(), method_name)
+                    else:
                         raise CASOMethodNotFoundError(self.current_line_num(), self.current_char_pos(), method_name, object_name)
                 else: # If it's supposed to be an attribute
                     attribute_found = any(attribute.attribute_name == attribute_name for attribute in obj.object_attributes)
