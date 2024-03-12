@@ -282,6 +282,7 @@ class CASOParser:
 
     # Useful constants
     TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOL', 'EMPTY']
+    NEW_TYPES = [] # Object types
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
     COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND', 'TRUE', 'FALSE'] + ARITHMETIC_OPERATORS
 
@@ -478,6 +479,7 @@ class CASOParser:
     def add_type(self, type_name):
         '''This method will add a new type to the list of types'''
         self.TYPES.append(type_name)
+        self.NEW_TYPES.append(type_name)
 
     def lookup_variable(self, variable_name):
         for scope in reversed(self.scope_stack):
@@ -512,6 +514,10 @@ class CASOParser:
     def peek_next_token(self):
         '''This method will return the next token without advancing the current position'''
         return self.tokens[self.current_position + 1]
+
+    def is_object_type(self, object_type):
+        '''This method will check if a type is an object type'''
+        return object_type in self.NEW_TYPES
 
     # List of the methods that will parse the different types of statements
     def parse_declaration(self):
