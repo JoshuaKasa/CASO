@@ -406,7 +406,16 @@ class CASOParser:
 
     def is_registered_object(self, object_name):
         '''This method will check if an object is already registered'''
-        return any(obj.object_name == object_name for obj in self.object_stack)
+        in_object_stack = any(obj.object_name == object_name for obj in self.object_stack)
+        in_scope_stack = any(object_name in scope for scope in self.scope_stack)
+        return in_object_stack or in_scope_stack
+
+    def lookup_object(self, object_name):
+        '''This method will look up an object in the object stack'''
+        for obj in self.object_stack:
+            if obj.object_name == object_name:
+                return obj
+        return None
 
     def is_registered_object_exception(self, object_name):
         '''This method will check if an object is already registered and raise an exception if it is'''
