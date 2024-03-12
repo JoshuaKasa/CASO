@@ -544,40 +544,82 @@ class CASOParser:
         self.advance_token() # Skip the type assignment token
         variable_type_token = self.tokens[self.current_position]
         self.is_valid_type(variable_type_token.value) # Check if the variable type is valid
-        
-        # Check if the variable type is a list
-        is_list = False
-        if variable_type_token.type == "LIST": # This means that the variable type is a list
-            variable_type = self.parse_list()
-            is_list = True # Set the is_list flag to True
-        else:
-            variable_type = variable_type_token.value
-            self.current_position += 1 # Skip the variable type token
 
-        # Now should come the assignment operator
-        self.expect_token('ASSIGN')
-
-        # Now should come the variable value, which can be either an expression or a list
-        self.advance_token() # Skip the assignment token
-        if is_list: # If the variable type is a list, then the variable value should be a list expression
-            variable_value = self.parse_list_expression()
-        else:
-            # Here 2 things could happen, loan functions or an expression
-            if self.current_token_type() == 'FROM':
-                # If the current token is a FROM token, then we should parse the loan function
-                # For doing this, we will set the current variable value to 'None' and then parse the loan function first
-                # so that we can get the variable value from the loan function later
-                self.parse_loan() # For later, here we should get the variable value from the loan function
-                variable_value = self.nodes[-1].loan_variable # Get the variable value from the loan function
+        # Checking if we're trying to create an object
+        if not self.is_object_type(variable_type_token.value):
+            # Check if the variable type is a list
+            is_list = False
+            if variable_type_token.type == "LIST": # This means that the variable type is a list
+                variable_type = self.parse_list()
+                is_list = True # Set the is_list flag to True
             else:
-                variable_value = self.parse_expression()
+                variable_type = variable_type_token.value
+                self.advance_token() # Skip the variable type token
 
-        # We can now add the variable to the current scope
-        self.register_variable(variable_name, variable_type, variable_value, False, at_notation)
+            # Now should come the assignment operator
+            self.expect_token('ASSIGN')
 
-        # After all the above, we can add the declaration node to the list of nodes
-        append_node = DECLARATIONnode(variable_name, variable_type, variable_value)
-        self.nodes.append(append_node)
+            # Now should come the variable value, which can be either an expression or a list
+            self.advance_token() # Skip the assignment token
+            if is_list: # If the variable type is a list, then the variable value should be a list expression
+                variable_value = self.parse_list_expression()
+            else:
+                # Here 2 things could happen, loan functions or an expression
+                if self.current_token_type() == 'FROM':
+                    # If the current token is a FROM token, then we should parse the loan function
+                    # For doing this, we will set the current variable value to 'None' and then parse the loan function first
+                    # so that we can get the variable value from the loan function later
+                    self.parse_loan() # For later, here we should get the variable value from the loan function
+                    variable_value = self.nodes[-1].loan_variable # Get the variable value from the loan function
+                else:
+                    variable_value = self.parse_expression()
+
+            # We can now add the variable to the current scope
+            self.register_variable(variable_name, variable_type, variable_value, False, at_notation)
+
+            # After all the above, we can add the declaration node to the list of nodes
+            append_node = DECLARATIONnode(variable_name, variable_type, variable_value)
+            self.nodes.append(append_node)
+
+        # In this case, we're trying to create an object
+        else:
+            object_type = self.current_token_value() # Save the object type
+
+            self.advance_token() # Skip the variable type token
+            self.expect_token('ASSIGN') # Now should come the assignment operator
+            self.advance_token() # Skip the assignment token
+            self.expect_token('OPEN_BRACE') # Open brace token for listing the object properties
+            self.advance_token() # Skip the open brace token
+
+            # Check object properties
+            object_properties = []
+            object_object = self.lookup_object(variable_type_token.value) # This will store a copy of the object we're trying to create
+            object_properties_number = len(object_object.object_attributes)
+
+            # Parsing the object properties
+            while self.current_token_type() != 'CLOSE_BRACE':
+                while self.current_token_type() == 'NEWLINE':
+                    self.advance_token() # Skip the newline token
+                if self.current_token_type() == 'CLOSE_BRACE': # Check if the current token is a close brace token
+                    break
+
+                property_value = self.parse_until('COMMA') # Parse the property value
+                object_properties.append(property_value) # Add the property value to the list of object properties
+
+                # Check if the number of object properties is greater than the number of object attributes
+                if len(object_properties) > object_properties_number:
+                    raise CASOArgumentNumberError(self.current_token().line_num, self.current_token().char_pos, object_type, object_properties_number, len(object_properties))
+
+            # Check if the number of object properties is less than the number of object attributes
+            if len(object_properties) < object_properties_number:
+                raise CASOArgumentNumberError(self.current_token().line_num, self.current_token().char_pos, object_type, object_properties_number, len(object_properties))
+
+            self.advance_token() # Skip the close brace token
+
+            # Now we can add the object to the current scope and to the AST
+            self.register_variable(variable_name, variable_type_token.value, object_properties, False, at_notation)
+            append_node = DECLARATIONnode(variable_name, object_type, expression_string='', is_object=True, object_properties=object_properties)
+            self.nodes.append(append_node)
 
     # This function will be used to parse the assignment statement
     def parse_assignment(self):
