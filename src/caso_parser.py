@@ -1413,17 +1413,9 @@ class CASOParser:
             for node in module_ast: # Iterating over the nodes and adding the imported module to the AST
                 if node != None: # Newline
                     if node.node_type == NodeType.FUNCTION_DECLARATION: # If the node is a function declaration
-                        if len(imported_methods_names) == 0: # This means we want to import all the methods
-                            imported_methods.append(node)
-                        else:
-                            if node.function_name in imported_methods_names: # If the method is in the imported methods list 
-                                imported_methods.append(node)
+                        imported_methods.append(node)
                     elif node.node_type == NodeType.VARIABLE_DECLARATION: # If the node is a variable declaration
-                        if len(imported_attributes) == 0:
-                            imported_attributes[node.variable_name] = node.variable_type
-                        else:
-                            if node.variable_name in imported_attributes:
-                                imported_attributes[node.variable_name] = node.variable_type
+                        imported_attributes[node.variable_name] = node.variable_type
             
             # Creating and adding the object to the AST
             object_node = OBJECTnode(module_name, imported_attributes, imported_methods) 
