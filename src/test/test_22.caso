@@ -1,0 +1,21 @@
+// Predicate functions are used to define return values based on conditions.
+fnc predicate_v1(a: Int, b: Int): Int {
+	$> a < b | 1
+	$> true  | a + b
+}
+
+// The predicate function above can be rewritten or seen as:
+fnc predicate_v2(a: Int, b: Int): Int {
+	if (a < b) {
+		| 1
+	}
+	if (true) {
+		| a + b
+	}
+}
+
+// Remember predicate functions must ALWAYS return a value in a single line.
+// Meaning that they can be useful for when just having a single line of code, examples might include:
+// - Recursive functions
+// - Simple if-else statements
+// - Simple switch-case statements

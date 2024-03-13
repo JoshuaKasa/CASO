@@ -59,6 +59,7 @@ class CASOLexer:
         ('NEQ', r'!='), # Inequality operator
         ('LT', r'<'), # Less than operator
         ('LE', r'<='), # Less than or equal to operator
+        ('PREDICATE', r'$>'), # Predicate return start operator 
         ('GT', r'>'), # Greater than operator
         ('GE', r'>='), # Greater than or equal to operator
         ('UKN', r'\?'), # Unknown operator (used for pattern matching)

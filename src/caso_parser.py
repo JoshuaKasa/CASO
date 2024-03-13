@@ -26,7 +26,7 @@
 #   - I need another stack for the object attributes and methods, as they are not the same as the global variables and functions. (DONE)
 #   - Implement full inheritance. (DONE)
 
-# TODO: Add libraries function and variable calls, for future me, here's a example: (IN PROGRESS)
+# TODO: Add libraries function and variable calls, for future me, here's a example: (DONE)
 #   - `use standard`
 #   - `standard::print_line("Hello, World!")`
 
@@ -35,17 +35,21 @@
 #   - Future me, don't forget to add objects as types for variables (basically object declaration you stupid bastard) (DONE)
 
 # TODO: Implement scoping for ALL the possible cases, this means: obejcts, functions, attributes, constructors, etc... (DONE)
-#   - I can't do it all today, so for future me, remember this pseudocode:
+#   - I can't do it all today, so for future me, remember this pseudocode: (DONE)
 #       First thing that comes to my mind is to make it so that declared variables can actually be seen as objects, this means that I'll need to make a new parameter
 #       for the variable infos stating if it's a object or not, in case it is a object then we can access it, else, we can't. How do we know if the var is a object?
 #       We will simply check if it's been declared after the name of a object (remember we add objects as types whenever we declare one).
 
 # TODO: Add 'at' notation (me, remember to look at your notes). (DONE)
-#   - I should also add the 'at' notation for functions, idk :/
+#   - I should also add the 'at' notation for functions, idk :/ (MOMENTARILY PAUSED)
 
 # TODO: Add '@dataclass' to all of my objects (for making code cleaner and easier to read).
 
 # TODO: Add function and variable properties (example: this function can't return a value greater than 10, or this variable can't be greater than 10).
+
+# TODO: Designing and implementing 'predicate' functions:
+#   - Design (DONE)
+#   - Implementation 
 
 from enum import Enum
 
