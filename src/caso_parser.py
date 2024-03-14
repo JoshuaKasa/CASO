@@ -94,28 +94,39 @@ class ASTnode:
         return f"ASTnode({repr(self.node_type)}, {repr(self.children)})"
 
 class DECLARATIONnode(ASTnode):
-    def __init__(self, variable_name, variable_type, expression_string, is_object=False, object_properties=None):
+    def __init__(self, variable_name, variable_type, expression_string, is_list=False, list_size=0, is_object=False, object_properties=None):
         super().__init__(NodeType.VARIABLE_DECLARATION)
         self.variable_name = variable_name
-        if is_object == False:
+        if is_object == False and is_list == False:
             self.variable_type = conversion_table[variable_type]
         else:
-            self.variable_type = variable_type
+            # We don't need to convert the type to Java type if it's a object
+            if is_object:
+                self.variable_type = variable_type
+            # And we do it a lil bit differently if it's a list
+            else:
+                # Remember list size is not the list length but the dimensions
+                print(variable_type.replace('[]', ''))
+                self.variable_type = conversion_table[variable_type.replace('[]', '')] + ('[]' * list_size)
+
         self.variable_value = expression_string
         self.is_object = is_object
+        self.is_list = is_list
+        self.list_size = list_size
         self.object_properties = object_properties
 
     def __repr__(self):
-        return f"DECLARATIONnode({repr(self.variable_name)}, {repr(self.variable_type)}, {repr(self.variable_value)}, {repr(self.is_object)}, {repr(self.object_properties)})"
+        return f"DECLARATIONnode({repr(self.variable_name)}, {repr(self.variable_type)}, {repr(self.variable_value)}, {repr(self.is_list)}, {repr(self.list_size)}, {repr(self.is_object)}, {repr(self.object_properties)})"
 
 class ASSIGNMENTnode(ASTnode):
-    def __init__(self, variable_name, expression_string):
+    def __init__(self, variable_name, expression_string, array_index=None):
         super().__init__(NodeType.VARIABLE_ASSIGNMENT)
         self.variable_name = variable_name
         self.variable_value = expression_string
+        self.array_index = array_index
 
     def __repr__(self):
-        return f"ASSIGNMENTnode({repr(self.variable_name)}, {repr(self.variable_value)})"
+        return f"ASSIGNMENTnode({repr(self.variable_name)}, {repr(self.variable_value)}, {repr(self.array_index)})"
 
 class WHENnode(ASTnode):
     def __init__(self, variable_name, match_cases):
@@ -316,7 +327,7 @@ class CASOParser:
         if current_token.type == "LET":
             self.parse_declaration()
         elif current_token.type == "ID":
-            if self.tokens[self.current_position + 1].type == "REASSIGN":
+            if self.peek_next_token().type == 'REASSIGN' or self.peek_next_token().type == 'OPEN_BRACKET':
                 self.parse_assignment()
             elif self.peek_next_token().type == 'OPEN_PAREN':
                 self.parse_function_call()
@@ -554,12 +565,15 @@ class CASOParser:
         self.is_valid_type(variable_type_token.value) # Check if the variable type is valid
 
         # Checking if we're trying to create an object
+        list_size = 0
+        is_list = False
+
         if not self.is_object_type(variable_type_token.value):
             # Check if the variable type is a list
-            is_list = False
-            if variable_type_token.type == "LIST": # This means that the variable type is a list
-                variable_type = self.parse_list()
+            if variable_type_token.type == 'OPEN_BRACKET': # This means that the variable type is a list
+                variable_type = self.parse_list_type() # Get the list type, automatically advances the close bracket token
                 is_list = True # Set the is_list flag to True
+                list_size = variable_type.count('[]')
             else:
                 variable_type = variable_type_token.value
                 self.advance_token() # Skip the variable type token
@@ -570,7 +584,7 @@ class CASOParser:
             # Now should come the variable value, which can be either an expression or a list
             self.advance_token() # Skip the assignment token
             if is_list: # If the variable type is a list, then the variable value should be a list expression
-                variable_value = self.parse_list_expression()
+                variable_value = self.parse_list_value()
             else:
                 # Here 2 things could happen, loan functions or an expression
                 if self.current_token_type() == 'FROM':
@@ -586,7 +600,7 @@ class CASOParser:
             self.register_variable(variable_name, variable_type, variable_value, False, at_notation)
 
             # After all the above, we can add the declaration node to the list of nodes
-            append_node = DECLARATIONnode(variable_name, variable_type, variable_value)
+            append_node = DECLARATIONnode(variable_name, variable_type, variable_value, is_list=is_list, list_size=list_size)
             self.nodes.append(append_node)
 
         # In this case, we're trying to create an object
@@ -645,9 +659,18 @@ class CASOParser:
                 variable_info['used'] = True # Adding one to the number of times the variable has been used
                 break # Break the loop after the variable has been found
 
-        # Now should come the assignment operator
+        # Now should come the assignment operator or the list index
         self.advance_token() # Skip the variable name token
-        assignment_token = self.expect_token('REASSIGN')
+
+        # Checking if the variable is a list
+        list_index = None
+        if '[]' in variable_info['type']:
+            self.expect_token('OPEN_BRACKET') # Check if the current token is an open bracket token
+            self.advance_token() # Skip the open bracket token
+
+            list_index = self.parse_until('CLOSE_BRACKET') # Parse the list index
+        else:
+            assignment_token = self.expect_token('REASSIGN')
 
         # Now should come the variable value, which is an expression
         self.advance_token() # Skip the assignment token
@@ -659,7 +682,7 @@ class CASOParser:
         self.modify_variable_value(variable_name, variable_value)
    
         # After all the above, we can add the assignment node to the list of nodes
-        append_node = ASSIGNMENTnode(variable_name, variable_value)
+        append_node = ASSIGNMENTnode(variable_name, variable_value, list_index)
         self.nodes.append(append_node)
 
     # This is the method that will parse ALL expressions
@@ -719,54 +742,58 @@ class CASOParser:
         expression_string = ' '.join(str(token.value) for token in expression_tokens)
         return expression_string
 
-    def parse_list_expression(self):
-        # Checking for correct syntax
-        self.current_position += 1 # Skip the open bracket token
-
-        # Parsing the list
-        list_values = []
-        while self.current_token_type() != 'CLOSE_BRACKET':
-            list_values.append(self.current_token_value())
-            self.advance_token()
-
-            # Checking for correct syntax
-            if self.current_token_type() == 'COMMA':
-                self.advance_token() # Skip the comma token
-
-        # Checking for correct syntax
-        self.expect_token('CLOSE_BRACKET')
-
-        # Finally finish parsing the list
-        self.advance_token() # Skip the close bracket token
-        return list_values
-
-    # This is the method that will parse lists
-    def parse_list(self):
+    # This is the method that will parse list types
+    def parse_list_type(self) -> str:
         # Checking for correct syntax
         self.advance_token() # Skip the list token
-        self.expect_token('OPEN_BRACKET')
-        list_content_type = 'List['
+        # We gotta use a different method for expecting a token as every type is a different token and I don't want to write a bunch of if statements
+        try:
+            self.expect_token('OPEN_BRACKET')
+        except:
+            try:
+                self.is_valid_type_exception(self.current_token_type())
+            except Exception as e:
+                raise e
 
-        # Recursively parse the list
-        self.advance_token() # Skip the open bracket token
-        list_content_type += str(self.parse_list_content())
-
-        # Checking for correct syntax
-        self.expect_token('CLOSE_BRACKET')
-
-        # Finally finish parsing the list
-        self.advance_token() # Skip the close bracket token
-        return list_content_type + ']'
-
-    def parse_list_content(self):
-        current_token = self.tokens[self.current_position]
-        if current_token.type == "LIST": # Checking if the list contains another list
-            return self.parse_list() 
-        elif current_token.type in self.TYPES: # Checking if the list contains a primitive type
-            self.current_position += 1 # Skip the type token
-            return current_token.value
+        # Parsing the list type
+        list_type = ''
+        if self.is_valid_type(self.current_token_type()): # Check if the type is valid
+            list_type = self.current_token_value() + '[]' # We gotta add the brackets for java types
+            self.advance_token() # Skip the type token
+            self.expect_token('CLOSE_BRACKET') # Check for correct syntax
+            self.advance_token() # Skip the close bracket token
+        # If the token is not a ID, it means there's gotta be another list, example: [[Int]] -> int[][] in Java
         else:
-            raise CASOSyntaxError(f"Expected list content, got {current_token.type}", current_token.line_num, current_token.char_pos)
+            self.expect_token('OPEN_BRACKET')
+            list_type = self.parse_list_type() + '[]' # Recursive call to parse the list type
+            self.expect_token('CLOSE_BRACKET')
+            self.advance_token()
+
+        return list_type
+
+
+    def parse_list_value(self) -> list:
+        self.expect_token('OPEN_BRACKET')  # Ensure we're starting with an open bracket
+        self.advance_token()  # Move past the open bracket
+
+        list_values = []
+        while self.current_token_type() != 'CLOSE_BRACKET':
+            if self.current_token_type() == 'OPEN_BRACKET':
+                # If we find an open bracket, we're dealing with a nested list
+                list_values.append(self.parse_list_value())
+            else:
+                # Otherwise, parse the current token as a list element
+                list_value = self.parse_until('COMMA', 'CLOSE_BRACKET', skip_token=False)
+                list_values.append(list_value)
+                if self.current_token_type() == 'CLOSE_BRACKET':
+                    break  # End of the list
+            
+            if self.current_token_type() == 'COMMA':
+                self.advance_token()  # Move past the comma for the next element
+        
+        self.advance_token()  # Skip the closing bracket of the current list
+        return list_values
+
 
     # Method that will parse the when statement
     def parse_when(self):
