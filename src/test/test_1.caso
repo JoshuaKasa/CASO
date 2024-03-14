@@ -15,8 +15,5 @@ x := z + 1
 // x := ----- returns an error
 // x := a ----- returns an error
 
-let a: List[List[Int]] = [1, 2, 3, 4]
-
-// let b: List[List[Int] = [] ----- returns an error
-// let b: List[Int]] = [1, 2, 3, 4] ----- returns an error
-// let b: List Int ----- returns an error
+let a: [Int] = [1 + 2, x + z - x, 3, 4]
+let b: [[Int]] = [[1, 2], [3, 4]]
