@@ -51,6 +51,10 @@
 #   - Design (DONE)
 #   - Implementation 
 
+# TODO: New array implementation:
+#   - Design (IN PROGRESS)
+#   - Implementation
+
 from enum import Enum
 
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError, CASOClassAlreadyDeclaredError, CASOMismatchedTypeError, CASOAttributeNotFoundError, CASOMethodNotFoundError, CASONotSharedError, CASOArgumentNumberError
