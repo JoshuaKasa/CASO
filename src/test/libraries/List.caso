@@ -1,0 +1,12 @@
+let length: Int = 0
+let array_data: [Int] = []
+
+fnc increment(): Int {
+	length := length + 1
+	| length
+}
+
+fnc push(value: Int): Empty {
+	array_data[length] := value
+	increment()
+}
