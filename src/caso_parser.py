@@ -770,42 +770,40 @@ class CASOParser:
 
     # Method that will parse the when statement
     def parse_when(self):
-        self.current_position += 1 # Skip the WHEN token
-        if self.tokens[self.current_position].type != 'ID':
-            raise CASOSyntaxError(f"Expected variable name, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the when token
+        self.expect_token('ID') # Check for correct syntax
 
         # Checking if the variable name is in the dictionary of variables
-        variable_name = self.tokens[self.current_position].value
+        variable_name = self.current_token_value()
         self.is_not_registered_variable_exception(variable_name)
         
         # Correct syntax check
-        self.current_position += 1 # Skip the variable name token
-        if self.tokens[self.current_position].type != 'OPEN_BRACE':
-            raise CASOSyntaxError(f"Expected open bracket, got {self.tokens[self.current_position].type}", self.tokens[self.current_position].line_num, self.tokens[self.current_position].char_pos)
+        self.advance_token() # Skip the variable name token
+        self.expect_token('OPEN_BRACE')
 
         # Pattern matching for the variable
-        self.current_position += 1  # Skip the open brace token
+        self.advance_token() # Skip the open brace token
         match_cases = []
 
         while True:
 
             # Break the loop if the next token is a closing brace
-            if self.tokens[self.current_position].type == 'CLOSE_BRACE':
+            if self.current_token_type() == 'CLOSE_BRACE':
                 break
 
             match_case = self.parse_pattern()
             match_cases.append(match_case)
 
             # Move to the next token and check if it's a comma, a closing brace, or the start of a new match case
-            self.current_position += 1
-            while self.tokens[self.current_position].type == 'NEWLINE':
-                self.current_position += 1
+            self.advance_token()  # Skip the pattern token
+            while self.current_token_type()  == 'NEWLINE':
+                self.advance_token()
 
-            if self.tokens[self.current_position].type == 'COMMA':
-                self.current_position += 1  # Skip the comma token
-            elif self.tokens[self.current_position].type == 'CLOSE_BRACE':
+            if self.current_token_type()  == 'COMMA':
+                self.advance_token()
+            elif self.current_token_type()  == 'CLOSE_BRACE':
                 break  # End of the `when` block
-            elif self.tokens[self.current_position].type in self.COMPARISON_OPERATORS:
+            elif self.current_token_type()  in self.COMPARISON_OPERATORS:
                 continue  # Start of a new MATCHCASEnode
             else:
                 raise CASOSyntaxError(f"Expected comma, closing brace, or a pattern operator, got {self.tokens[self.current_position].type}", 
@@ -1065,7 +1063,9 @@ class CASOParser:
             parameter = self.parse_until('COMMA', 'CLOSE_PAREN') # The method already skips the comma or close parenthesis token
             parameters.append(parameter)
             if parameter == '': # If the parameter is empty, it means that there are no more parameters
+                self.advance_token() # Skip the close parenthesis token
                 break
+
         if parameters[-1] == '':
             parameters.pop(-1)
 
