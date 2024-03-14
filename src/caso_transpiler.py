@@ -161,6 +161,27 @@ class CASOTranspiler:
             self.transpiled_code += f'''
             {node.variable_type} {node.variable_name} = {node.variable_value};
             '''
+            if node.is_list == False:
+                self.transpiled_code += f'''
+                {node.variable_type} {node.variable_name} = {node.variable_value};
+                '''
+            else:
+                self.transpiled_code += f'''
+                {node.variable_type} {node.variable_name} =
+                '''
+                self.transpile_array_value(node.variable_value)
+                self.transpiled_code += ';\n'
+
+    def transpile_array_value(self, array_value):
+        self.transpiled_code += '{'
+        for i, element in enumerate(array_value):
+            if isinstance(element, list):
+                self.transpile_array_value(element)
+            else:
+                self.transpiled_code += f'{element}'
+            if i != len(array_value) - 1:
+                self.transpiled_code += ', '
+        self.transpiled_code += '}'
 
     def transpile_assignment(self, node):
         self.transpiled_code += f'''
