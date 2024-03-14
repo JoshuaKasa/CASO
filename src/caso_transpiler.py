@@ -158,9 +158,6 @@ class CASOTranspiler:
                     self.transpiled_code += ', '
             self.transpiled_code += ');\n'
         else:
-            self.transpiled_code += f'''
-            {node.variable_type} {node.variable_name} = {node.variable_value};
-            '''
             if node.is_list == False:
                 self.transpiled_code += f'''
                 {node.variable_type} {node.variable_name} = {node.variable_value};
