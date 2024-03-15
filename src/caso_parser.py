@@ -49,11 +49,12 @@
 
 # TODO: Designing and implementing 'predicate' functions:
 #   - Design (DONE)
-#   - Implementation 
+#   - Implementation
 
 # TODO: New array implementation:
 #   - Design (IN PROGRESS)
-#   - Implementation
+#   - Implementation:
+#       - I implemented everything, all I gotta do is now make a function for converting primitive types to Java types and then I'm done.
 
 from enum import Enum
 
@@ -62,7 +63,6 @@ from caso_lexer import CASOLexer
 from caso_types import conversion_table 
 
 import os
-import inspect
 
 class NodeType(Enum):
     VARIABLE_DECLARATION = 1
@@ -85,6 +85,19 @@ class NodeType(Enum):
     LINK = 18
     METHOD_ACCESS = 19
 
+def convert_primitive_type_to_java(variable_type, is_list=False, list_size=0, is_object=False):
+    if is_object == False and is_list == False:
+        variable_type = conversion_table[variable_type]
+    else:
+        # We don't need to convert the type to Java type if it's a object
+        if is_object:
+            variable_type = variable_type
+        # And we do it a lil bit differently if it's a list
+        else:
+            # Remember list size is not the list length but the dimensions
+            variable_type = conversion_table[variable_type.replace('[]', '')] + ('[]' * list_size)
+    return variable_type
+
 class ASTnode:
     def __init__(self, node_type, children=None): # We will use this to set the node type and children
         self.node_type = node_type
@@ -97,18 +110,7 @@ class DECLARATIONnode(ASTnode):
     def __init__(self, variable_name, variable_type, expression_string, is_list=False, list_size=0, is_object=False, object_properties=None):
         super().__init__(NodeType.VARIABLE_DECLARATION)
         self.variable_name = variable_name
-        if is_object == False and is_list == False:
-            self.variable_type = conversion_table[variable_type]
-        else:
-            # We don't need to convert the type to Java type if it's a object
-            if is_object:
-                self.variable_type = variable_type
-            # And we do it a lil bit differently if it's a list
-            else:
-                # Remember list size is not the list length but the dimensions
-                print(variable_type.replace('[]', ''))
-                self.variable_type = conversion_table[variable_type.replace('[]', '')] + ('[]' * list_size)
-
+        self.variable_type = convert_primitive_type_to_java(variable_type, is_list, list_size, is_object)
         self.variable_value = expression_string
         self.is_object = is_object
         self.is_list = is_list
@@ -154,7 +156,7 @@ class FUNCTIONDECLARATIONnode(ASTnode):
 
         # Converting all types to Java types
         for arg in function_args:
-            function_args[arg] = conversion_table[function_args[arg]]
+            function_args[arg] = convert_primitive_type_to_java(function_args[arg])
         self.function_args = function_args
         
         self.return_type = conversion_table[return_type]
