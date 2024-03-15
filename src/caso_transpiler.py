@@ -181,9 +181,14 @@ class CASOTranspiler:
         self.transpiled_code += '}'
 
     def transpile_assignment(self, node):
-        self.transpiled_code += f'''
-        {node.variable_name} = {node.variable_value};
-        '''
+        if node.array_index == None:
+            self.transpiled_code += f'''
+            {node.variable_name} = {node.variable_value};
+            '''
+        else:
+            self.transpiled_code += f'''
+            {node.variable_name}[{node.array_index}] = {node.variable_value};
+            '''
 
     def transpile_when(self, node):
         for i, matchcase in enumerate(node.match_cases):
