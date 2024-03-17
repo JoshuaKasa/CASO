@@ -56,6 +56,8 @@
 #   - Implementation:
 #       - I implemented everything, all I gotta do is now make a function for converting primitive types to Java types and then I'm done.
 
+# TODO: Incorporating and importing classes, instead of only functions and variables.
+
 from enum import Enum
 
 from caso_exception import CASOSyntaxError, CASOAttributeError, CASOValueError, CASONameError, CASOIndexError, CASOIllegalTokenError, CASONotDeclaredError, CASOWarning, CASOInvalidClassMemberError, CASOInvalidTypeError, CASOClassNotFoundError, CASOImportError, CASOUnexpectedTokenError, CASOClassAlreadyDeclaredError, CASOMismatchedTypeError, CASOAttributeNotFoundError, CASOMethodNotFoundError, CASONotSharedError, CASOArgumentNumberError
@@ -458,7 +460,7 @@ class CASOParser:
 
     def is_valid_type(self, variable_type):
         '''This method will check if a variable type is valid'''
-        return variable_type in self.TYPES
+        return variable_type in self.TYPES or variable_type in self.object_stack
 
     def is_valid_type_exception(self, variable_type):
         '''This method will check if a variable type is valid and raise an exception if it is not'''
@@ -749,13 +751,14 @@ class CASOParser:
         # Checking for correct syntax
         self.advance_token() # Skip the list token
         # We gotta use a different method for expecting a token as every type is a different token and I don't want to write a bunch of if statements
-        try:
-            self.expect_token('OPEN_BRACKET')
-        except:
+        if self.current_token_type() != 'OPEN_BRACKET':
             try:
                 self.is_valid_type_exception(self.current_token_type())
             except Exception as e:
-                raise e
+                try:
+                    self.is_valid_type_exception(self.current_token_value())
+                except Exception as e:
+                    raise e
 
         # Parsing the list type
         list_type = ''
@@ -1174,13 +1177,10 @@ class CASOParser:
             self.expect_token('TYPE_ASSIGN') # Expecting a type assignment token
             self.advance_token() # Skip the type assignment token
             parameter_type = self.current_token_type() # Getting the parameter type
-            if parameter_type not in self.TYPES: 
+            if parameter_type == 'OPEN_BRACKET':
+                parameter_type = self.parse_list_type() # Parsing the list type (if it's a list type)
+            elif parameter_type not in self.TYPES: 
                 raise CASOInvalidTypeError(self.current_line_num(), self.current_char_pos(), self.current_token_value()) # Checking if the type is valid
-
-            # If the parameter is a list, we need to parse it
-            if parameter_type == 'LIST':
-                self.advance_token() # Skip the list token
-                parameter_type = self.parse_list_expression() # Parsing the list expression
 
             # Adding the parameter to the dictionary
             if parameter_name in parameters:
@@ -1191,8 +1191,7 @@ class CASOParser:
             self.register_variable(parameter_name, parameter_type) # Adding the parameter to the current scope
 
             # Skipping the parameter type token
-            if parameter_type != 'LIST':
-                self.advance_token()
+            self.advance_token()
 
             self.expect_token('COMMA', 'CLOSE_PAREN') # Expecting a comma or close parenthesis token
 
@@ -1349,7 +1348,6 @@ class CASOParser:
                     # We are already skipping the comma and everything else in the parse_until function
                 if method_parameters[-1] == '': # If the last parameter is empty, we pop it
                     method_parameters.pop()
-                print('Method parameters:', method_parameters)
             else:
                 self.advance_token() # Skip the close parenthesis token
             method_node = METHODACCESSnode(object_name, method_name, method_parameters)
