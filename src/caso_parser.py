@@ -302,7 +302,7 @@ class CASOParser:
         self.imported_modules = [] # List of imported modules
 
     # Useful constants
-    TYPES = ['LIST', 'STRING', 'INT', 'FLOAT', 'BOOL', 'EMPTY']
+    TYPES = ['STRING', 'INT', 'FLOAT', 'BOOL', 'EMPTY', 'ANY'] # Primitive types
     NEW_TYPES = [] # Object types
     ARITHMETIC_OPERATORS = ['PLUS', 'MINUS', 'MUL', 'DIV', 'MOD']
     COMPARISON_OPERATORS = ['EQ', 'NEQ', 'LT', 'LE', 'GT', 'GE', 'UKN', 'OR', 'AND', 'TRUE', 'FALSE'] + ARITHMETIC_OPERATORS
