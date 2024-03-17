@@ -14,6 +14,20 @@ package libraries;
             
         }
         
+        public  void Halt(
+        ) {
+
+        System.exit(STD_FAILURE);
+        
+        }
+        
+        public  void Pass(
+        ) {
+
+        System.exit(STD_SUCCESS);
+        
+        }
+        
         public static  void print_line(
         String s) {
 

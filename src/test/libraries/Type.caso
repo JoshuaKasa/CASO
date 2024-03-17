@@ -1,0 +1,12 @@
+obj Type() {
+	
+}
+
+obj Integer() @Type {
+}
+
+obj Boolean() @Type {
+}
+
+obj String() @Type {
+}
