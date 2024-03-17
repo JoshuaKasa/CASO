@@ -237,7 +237,7 @@ class OBJECTnode(ASTnode):
         for attribute in object_attributes:
             # Checking if the variable is already a Java type
             if object_attributes[attribute] not in conversion_table.values():
-                object_attributes[attribute] = conversion_table[object_attributes[attribute]]
+                object_attributes[attribute] = convert_primitive_type_to_java(object_attributes[attribute], is_object=True)
 
         if parent_class is not None:
             for attribute in parent_class_attributes:
