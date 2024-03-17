@@ -4,7 +4,6 @@ conversion_table = {
     'Str': 'String',
     'Bool': 'boolean',
     'Any': 'Object',
-    'List': 'ArrayList',
     'Empty': 'void',
     'const': 'final',
     'INT': 'int',
