@@ -1,1 +1,25 @@
-incorp List {}
+incorp standard {}
+
+obj Type(value: Any) {
+}
+
+obj Integer() @Type {
+}
+
+obj Double() @Type {
+}
+
+obj String() @Type {
+}
+
+obj Boolean() @Type {
+}
+
+obj List(data: [Type], length: Int) @Type {
+	fnc push(data: Any) {
+		list_data[length] = data
+		length += 1
+	}
+}
+
+standard.print_line("Hello, World!")
