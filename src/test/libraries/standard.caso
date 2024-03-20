@@ -1,13 +1,13 @@
 let STD_SUCCESS: Int = 0
 let STD_FAILURE: Int = 1
 
-fnc Halt(): Empty {
+fnc shared Halt(): Empty {
 	caso___native_java_start
 	System.exit(STD_FAILURE);
 	caso___native_java_end
 }
 
-fnc Pass(): Empty {
+fnc shared Pass(): Empty {
 	caso___native_java_start
 	System.exit(STD_SUCCESS);
 	caso___native_java_end
