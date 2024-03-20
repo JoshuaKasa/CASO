@@ -1,3 +1,60 @@
+let PI: Float = 3.14159265358979323846
+let TAU: Float = 6.28318530717958647692
+let E: Float = 2.7182818284590452354
+let PHI: Float = 1.6180339887498948482
+
+fnc abs(x: Int): Int {
+    $> x < 0 | -x 
+             | x
+}
+
+fnc max(x: Int, y: Int): Int {
+    $> x > y | x
+             | y
+}
+
+fnc min(x: Int, y: Int): Int {
+    $> x < y | x 
+             | y 
+}
+
+fnc clamp(x: Int, min: Int, max: Int): Int {
+    $> x < min | min
+    $> x > max | max
+               | x
+}
+
+fnc floor(x: Float): Int {
+    let whole: Int = x // Truncating the decimal part
+
+    $> x < 0 | whole - 1
+             | whole
+}
+
+fnc ceil(x: Float): Int {
+    let whole: Int = x
+
+    $> x > 0 | whole + 1
+             | whole
+}
+
+fnc round(x: Float): Int {
+    let whole: Int = x
+    let fraction: Float = x - whole
+
+    if (x >= 0) {
+        // For positive numbers, round up if the fraction is greater than or equal to 0.5
+        $> fraction >= 0.5 | whole + 1
+                           | whole
+    }
+    else {
+        // For negative numbers, need to adjust since frac is negative
+        // Round up (towards zero) if the absolute value of frac is 0.5 or more
+        $> fraction <= -0.5 | whole - 1
+                            | whole
+    }
+}
+
 fnc power(base: Int, exponent: Int): Int {
     let result: Int = 1
     loop (i, 1 to exponent) {
