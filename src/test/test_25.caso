@@ -1,0 +1,14 @@
+incorp standard {}
+
+fnc multiply(a: Int, b: Int): Int {
+	$> b == 0 || a == 0 | 0 // if a or b is 0, return 0
+	$> b == 1 | a // if b is 1, return a
+	$> a == 1 | b // if a is 1, return b
+
+	let result: Int = 0
+	loop (i, 1 to b) {
+		result := result + a
+	}
+
+	| result
+}
