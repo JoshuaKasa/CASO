@@ -5,13 +5,11 @@
         
             import libraries.standard;
             
-        public class test_23 {
+        public class test_25 {
         
             public static void main(String[] args) {
 
         
-        standard.print_line(
-        "Hello, World!");
             }
         }
         

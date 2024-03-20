@@ -14,14 +14,14 @@ package libraries;
             
         }
         
-        public  void Halt(
+        public static  void Halt(
         ) {
 
         System.exit(STD_FAILURE);
         
         }
         
-        public  void Pass(
+        public static  void Pass(
         ) {
 
         System.exit(STD_SUCCESS);
