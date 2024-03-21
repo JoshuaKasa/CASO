@@ -76,7 +76,10 @@ class CASOTranspiler:
             if node is None:
                 continue
             if node.node_type == NodeType.FUNCTION_DECLARATION:
-                self.transpile_function_declaration(node, transpile_to_main=False)
+                to_main = False
+                if node.is_shared == False:
+                    to_main = True
+                self.transpile_function_declaration(node, transpile_to_main=to_main)
                 self.ast.remove(node)
 
         # Now we can transpile the main method
@@ -135,6 +138,8 @@ class CASOTranspiler:
                 self.transpile_attribute_access(node)
             elif node.node_type == NodeType.METHOD_ACCESS:
                 self.transpile_method_access(node)
+            elif node.node_type == NodeType.PREDICATE:
+                self.transpile_predicate(node)
             else:
                 raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
@@ -427,9 +432,10 @@ class CASOTranspiler:
         # right now they're being parsed as a normal function, but you can't
         # have a function inside a function in Java
         for statement in node.loan_body:
-            if statement.node_type == NodeType.FUNCTION_DECLARATION:
-                self.transpile_function_declaration(statement)
-            self.transpile_node(statement)
+            if statement != None:
+                if statement.node_type == NodeType.FUNCTION_DECLARATION:
+                    self.transpile_function_declaration(statement)
+                self.transpile_node(statement)
 
     def transpile_attribute_access(self, node):
         self.transpiled_code += f'''
@@ -445,3 +451,9 @@ class CASOTranspiler:
             if i != len(node.method_args) - 1:
                 self.transpiled_code += ', '
         self.transpiled_code += ');'
+
+    def transpile_predicate(self, node):
+        self.transpiled_code += f'''
+        if ({node.condition}) {{
+            return {node.return_value};
+        '''
