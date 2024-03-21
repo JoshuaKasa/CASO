@@ -86,6 +86,7 @@ class NodeType(Enum):
     INCORPORATE = 17
     LINK = 18
     METHOD_ACCESS = 19
+    PREDICATE = 20
 
 def convert_primitive_type_to_java(variable_type, is_list=False, list_size=0, is_object=False):
     if is_object == False and is_list == False:
@@ -293,6 +294,15 @@ class INCORPORATEnode(ASTnode):
     def __repr__(self):
         return f"INCORPORATEnode({repr(self.module_name)}, {repr(self.module_attributes)}, {repr(self.module_methods)})"
 
+class PREDICATEnode(ASTnode):
+    def __init__(self, condition, return_value):
+        super().__init__(NodeType.PREDICATE)
+        self.condition = condition
+        self.return_value = return_value
+
+    def __repr__(self):
+        return f"PREDICATEnode({repr(self.condition)}, {repr(self.return_value)})"
+
 class CASOParser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -363,6 +373,8 @@ class CASOParser:
             self.parse_constructor()
         elif current_token.type == 'INCORPORATE':
             self.parse_incorporate()
+        elif current_token.type == 'PREDICATE':
+            self.parse_predicate()
         else:
             if current_token.type == "NEWLINE":
                 self.current_position += 1
@@ -1490,3 +1502,12 @@ class CASOParser:
         # Adding the module to the AST
         module_node = INCORPORATEnode(module_name, imported_attributes, imported_methods_names)
         self.nodes.append(module_node)
+
+    def parse_predicate(self):
+        self.advance_token() # Skip the PREDICATE token
+        condition: str = self.parse_until('PIPE')
+        return_value: str = self.parse_expression()
+        self.advance_token() # Skipping the newline
+
+        predicate_node = PREDICATEnode(condition, return_value)
+        self.nodes.append(predicate_node)
