@@ -703,6 +703,12 @@ class CASOParser:
 
     # This is the method that will parse ALL expressions
     def parse_expression(self) -> str:
+        '''
+        This method works the same as the parse_until method, but it will parse an expression until a NEWLINE token is found, without skipping it.
+
+        Returns:
+        - expression_string (str): The parsed expression as a string
+        '''
         return self.parse_until('NEWLINE', skip_token=False)
 
     # This method will parse a list expression
