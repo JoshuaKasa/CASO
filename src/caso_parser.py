@@ -1505,7 +1505,7 @@ class CASOParser:
                             variable_value = node.variable_value
                             self.register_variable(variable_name, variable_type, variable_value)
 
-        # Adding the module to the AST
+        # Adding the module to the start of the AST
         module_node = INCORPORATEnode(module_name, imported_attributes, imported_methods_names)
         self.nodes.append(module_node)
 
