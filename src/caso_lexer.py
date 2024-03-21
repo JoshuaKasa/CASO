@@ -56,11 +56,11 @@ class CASOLexer:
         # Comparison operators
         ('EQ', r'=='), # Equality operator
         ('NEQ', r'!='), # Inequality operator
-        ('LT', r'<'), # Less than operator
         ('LE', r'<='), # Less than or equal to operator
-        ('PREDICATE', r'$>'), # Predicate return start operator 
-        ('GT', r'>'), # Greater than operator
+        ('LT', r'<'), # Less than operator
+        ('PREDICATE', r'\$\>'), # Predicate return start operator 
         ('GE', r'>='), # Greater than or equal to operator
+        ('GT', r'>'), # Greater than operator
         ('UKN', r'\?'), # Unknown operator (used for pattern matching)
         ('AND', r'&&'), # And operator
         ('OR', r'\|\|'), # Or operator
@@ -93,7 +93,7 @@ class CASOLexer:
         ('MINUS', r'-'), # Subtraction operator
         ('MUL', r'\*'), # Multiplication operator
         ('DIV', r'/'), # Division operator
-        ('MOD', r'%'), # Modulo operato
+        ('MOD', r'%'), # Modulo operator
 
         # Other
         ("ID", r"[A-Za-z0-9_]+"),  # Identifiers (allowing alphanumeric characters and underscore)
