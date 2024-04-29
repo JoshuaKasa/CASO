@@ -1,0 +1,19 @@
+incorp standard {}
+
+fnc check_prime(n: Int): Empty {
+	if (n < 2) {
+		standard.print_line("Not prime")
+	}
+
+	loop (i, 2 to n / 2) {
+		if (n % i == 0) {
+			standard.print_line("Not prime")
+		}
+	}
+	standard.print_line("Prime")
+}
+
+fnc main(): Empty {
+	let n: Int = 13
+	check_prime(n)
+}

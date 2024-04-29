@@ -141,7 +141,10 @@ class CASOTranspiler:
             elif node.node_type == NodeType.PREDICATE:
                 self.transpile_predicate(node)
             else:
-                raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
+                if node.node_type == NodeType.INCORPORATE:
+                    print('Warning: Incorporate node not transpiled, something is wrong with the AST')
+                else:
+                    raise CASOTranspilerError("Unknown node type '%s'" % node.node_type)
 
     def transpile_node_to_string(self, node):
         initial_transpiled = self.transpiled_code
